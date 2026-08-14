@@ -1,4 +1,5 @@
 from os import path
+import threading
 
 import numpy as np
 import rasterio
@@ -23,10 +24,13 @@ CLIMATE_PARAMS = {
 
 
 class ClimateLossCalculator2:
+    _dem_dataset = None
+    _dem_path = None
+    _dem_lock = threading.RLock()
+
     def __init__(self, climate_num):
         self.coords = None
         self.climate_num = climate_num
-
 
         self._read_climate_file()
 
@@ -40,6 +44,25 @@ class ClimateLossCalculator2:
         # 计算数据尺寸
         # rows, cols = self.climate_data.shape  # 行数（纬度方向）列数（经度方向）
 
+    @classmethod
+    def _get_dem_dataset(cls, tif_path):
+        """复用已打开的 DEM，避免每次剖面都重新打开大文件导致卡顿。"""
+        with cls._dem_lock:
+            if cls._dem_dataset is not None and cls._dem_path == tif_path:
+                return cls._dem_dataset
+            if cls._dem_dataset is not None:
+                try:
+                    cls._dem_dataset.close()
+                except Exception:
+                    pass
+                cls._dem_dataset = None
+            if not path.exists(tif_path):
+                raise FileNotFoundError(f"{tif_path} 不存在")
+            cls._dem_dataset = rasterio.open(tif_path)
+            cls._dem_path = tif_path
+            print(f"[ClimateLossCalculator2] DEM 已加载: {tif_path}")
+            return cls._dem_dataset
+
     def extract_profile(self, xo, yo, xk, yk, progress_callback=None):
         """提取两点间剖面信息（经纬度、高程、距离）"""
         def _progress(value):
@@ -47,11 +70,9 @@ class ClimateLossCalculator2:
                 progress_callback(value)
 
         tif_path = settings.DEM_PATH
-        if not path.exists(tif_path):
-            raise FileNotFoundError(f"{tif_path} 不存在")
-
         _progress(0.08)
-        with rasterio.open(tif_path) as dataset:
+        with self._dem_lock:
+            dataset = self._get_dem_dataset(tif_path)
             transform = dataset.transform
             nodata_value = dataset.nodata
 

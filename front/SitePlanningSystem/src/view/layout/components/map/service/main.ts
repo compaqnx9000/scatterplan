@@ -325,13 +325,19 @@ export class main {
         this.$bus.emit("clusterAnalysisFailure");
         this.$bus.emit("closeLoading");
 
-        ElMessage.error(message);
+        const errText =
+          typeof message.message === "string"
+            ? message.message
+            : typeof message.error === "string"
+              ? message.error
+              : "计算失败，请重试";
+        ElMessage.error(errText);
         return;
       } else if (message.error) {
         this.$bus.emit("clusterAnalysisFailure");
         this.$bus.emit("closeLoading");
 
-        ElMessage.error(message.error);
+        ElMessage.error(typeof message.error === "string" ? message.error : "计算失败，请重试");
         return;
       }
       // 根据消息类型处理

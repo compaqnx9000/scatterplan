@@ -26,25 +26,32 @@
         <button
           class="map-toolbar__btn"
           type="button"
-          title="单链路计算适配"
+          title="配置接收站点"
           :disabled="pickLocked || !stationReady"
           :tabindex="stationReady ? 0 : -1"
-          :class="{ 'is-active': activeWorkflow === 'slp' }"
           @click="openSLP"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path
-              d="M7.5 8.5a3 3 0 1 1 0 6M16.5 8.5a3 3 0 1 0 0 6"
+              d="M12 3.2c-3.4 0-6.2 2.7-6.2 6.1 0 4.5 5.4 10.4 5.7 10.7l.5.5.5-.5c.3-.3 5.7-6.2 5.7-10.7 0-3.4-2.8-6.1-6.2-6.1Z"
               fill="none"
               stroke="currentColor"
-              stroke-width="1.7"
+              stroke-width="1.6"
+              stroke-linejoin="round"
+            />
+            <circle cx="12" cy="9.2" r="2" fill="currentColor" />
+            <path
+              d="M4.8 7.2a8.2 8.2 0 0 1 0 4M6.8 8a5.6 5.6 0 0 1 0 2.4"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
               stroke-linecap="round"
             />
             <path
-              d="M9.2 10.2 14.8 13.8M9.2 13.8 14.8 10.2"
+              d="M19.2 7.2a8.2 8.2 0 0 0 0 4M17.2 8a5.6 5.6 0 0 0 0 2.4"
               fill="none"
               stroke="currentColor"
-              stroke-width="1.7"
+              stroke-width="1.5"
               stroke-linecap="round"
             />
           </svg>
@@ -344,7 +351,6 @@ const openStationConfig = () => {
 
 const openSLP = () => {
   if (pickLocked.value || !stationReady.value) return;
-  activeWorkflow.value = "slp";
   $bus?.emit("openSLPComputedDialog");
 };
 

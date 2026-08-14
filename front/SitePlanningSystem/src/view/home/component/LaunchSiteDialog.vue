@@ -29,6 +29,7 @@
           label-position="top"
           class="station-config__form"
           require-asterisk-position="right"
+          :show-message="false"
         >
           <div class="station-config__body">
           <div class="station-config__columns">
@@ -178,6 +179,7 @@
 
 import { computed, getCurrentInstance, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { validateLongitude, validateLatitude } from "@/view/home/service/rules";
+import { shakeInvalidFormFields } from "@/view/home/service/formShake";
 
 let currentInstance = getCurrentInstance();
 let $bus = currentInstance?.appContext.config.globalProperties.$bus;
@@ -213,22 +215,22 @@ const validateFileName = (rule, value, callback) => {
 
 const rules = ref({
   name: [
-    { required: true, message: "请输入工程名称", trigger: ["focus", "change"] },
+    { required: true, message: "请输入工程名称", trigger: "change" },
     {
       required: true,
       validator: validateFileName,
       trigger: ["blur", "change"],
     },
   ],
-  diversity_order: [{ required: true, message: "请输入调整系数", trigger: ["focus", "change"] }],
-  tx_gain: [{ required: true, message: "请输入发射天线增益", trigger: ["focus", "change"] }],
-  rx_gain: [{ required: true, message: "请输入接收天线增益", trigger: ["focus", "change"] }],
-  freq: [{ required: true, message: "请输入信号频率", trigger: ["focus", "change"] }],
-  trans_power: [{ required: true, message: "请输入发射功率", trigger: ["focus", "change"] }],
-  point_name: [{ required: true, message: "请输入站点名称", trigger: ["focus", "change"] }],
-  comm_rate: [{ required: true, message: "请选择通信速率", trigger: ["focus", "change"] }],
-  lng: [{ required: true, validator: validateLongitude, trigger: ["focus", "change"] }],
-  lat: [{ required: true, validator: validateLatitude, trigger: ["focus", "change"] }],
+  diversity_order: [{ required: true, message: "请输入调整系数", trigger: "change" }],
+  tx_gain: [{ required: true, message: "请输入发射天线增益", trigger: "change" }],
+  rx_gain: [{ required: true, message: "请输入接收天线增益", trigger: "change" }],
+  freq: [{ required: true, message: "请输入信号频率", trigger: "change" }],
+  trans_power: [{ required: true, message: "请输入发射功率", trigger: "change" }],
+  point_name: [{ required: true, message: "请输入站点名称", trigger: "change" }],
+  comm_rate: [{ required: true, message: "请选择通信速率", trigger: "change" }],
+  lng: [{ required: true, validator: validateLongitude, trigger: "change" }],
+  lat: [{ required: true, validator: validateLatitude, trigger: "change" }],
 });
 
 const props = defineProps({
@@ -344,6 +346,8 @@ const handleConfirmVisible = async (formEl) => {
       });
       emit("update:visible", false);
       emit("update:isSelectStartPointOver", true);
+    } else {
+      shakeInvalidFormFields(formEl);
     }
   });
 };
@@ -460,13 +464,13 @@ onBeforeUnmount(() => {
     gap: 0;
     padding: 22px 24px 22px;
     border-radius: 14px;
-    background: rgba(26, 34, 44, 0.72);
+    background: rgba(26, 34, 44, 0.62);
     border: 1px solid rgba(180, 200, 220, 0.18);
     box-shadow:
       0 18px 48px rgba(0, 0, 0, 0.38),
       inset 0 1px 0 rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(22px) saturate(1.15);
-    -webkit-backdrop-filter: blur(22px) saturate(1.15);
+    backdrop-filter: blur(18px) saturate(1.2);
+    -webkit-backdrop-filter: blur(18px) saturate(1.2);
     color: #ffffff;
     overflow: visible;
     box-sizing: border-box;
@@ -539,7 +543,7 @@ onBeforeUnmount(() => {
   &__card {
     padding: 16px 14px 12px;
     border-radius: 10px;
-    background: rgba(18, 24, 31, 0.55);
+    background: rgba(18, 24, 31, 0.45);
     border: 1px solid rgba(255, 255, 255, 0.05);
     min-height: 0;
     height: auto;
@@ -734,9 +738,9 @@ onBeforeUnmount(() => {
     color: rgba(180, 190, 200, 0.75) !important;
   }
 
-  :deep(.station-config__form .el-form-item__error) {
-    color: #ff7b7b;
-    font-size: 11px;
+  :deep(.station-config__form .el-form-item.is-error .el-input__wrapper),
+  :deep(.station-config__form .el-form-item.is-error .el-select__wrapper) {
+    border-color: rgba(248, 113, 113, 0.7) !important;
   }
 }
 

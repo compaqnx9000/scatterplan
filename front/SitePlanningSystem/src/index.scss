@@ -1215,3 +1215,102 @@ body > .el-popper .el-scrollbar,
 .el-message-box__btns .el-button--primary:hover {
   filter: brightness(1.08);
 }
+
+/* Toast 提示：对齐 Gotham 深色毛玻璃 */
+.el-message {
+  --el-message-bg-color: transparent;
+  --el-message-border-color: transparent;
+  --el-message-text-color: rgba(235, 240, 245, 0.92);
+  padding: 10px 16px !important;
+  min-height: 40px;
+  background: rgba(26, 34, 44, 0.78) !important;
+  border: 1px solid rgba(180, 200, 220, 0.18) !important;
+  border-radius: 12px !important;
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.36),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(18px) saturate(1.15);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15);
+  font-family: var(--font-mono, 'IBM Plex Mono', 'Noto Sans SC', monospace) !important;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.el-message .el-message__content {
+  color: rgba(235, 240, 245, 0.92) !important;
+  font-size: 12px !important;
+  line-height: 1.45;
+  letter-spacing: 0.01em;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.el-message .el-message__icon {
+  margin-right: 8px;
+  font-size: 16px;
+}
+
+.el-message--error {
+  border-color: rgba(248, 113, 113, 0.35) !important;
+}
+
+.el-message--error .el-message__icon {
+  color: #f87171 !important;
+}
+
+.el-message--success {
+  border-color: rgba(90, 158, 111, 0.4) !important;
+}
+
+.el-message--success .el-message__icon {
+  color: #5a9e6f !important;
+}
+
+.el-message--warning {
+  border-color: rgba(232, 181, 42, 0.4) !important;
+}
+
+.el-message--warning .el-message__icon {
+  color: #e8b52a !important;
+}
+
+.el-message--info {
+  border-color: rgba(0, 162, 255, 0.35) !important;
+}
+
+.el-message--info .el-message__icon {
+  color: #7ec8ff !important;
+}
+
+/* 站点配置：校验失败不显示文案，控件晃动提示 */
+.station-config__form .el-form-item__error {
+  display: none !important;
+}
+
+.station-config__form .el-form-item.is-error .el-input__wrapper,
+.station-config__form .el-form-item.is-error .el-select__wrapper {
+  border-color: rgba(248, 113, 113, 0.7) !important;
+}
+
+@keyframes field-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-5px);
+  }
+  40% {
+    transform: translateX(5px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+.field-shake {
+  animation: field-shake 0.42s ease;
+}

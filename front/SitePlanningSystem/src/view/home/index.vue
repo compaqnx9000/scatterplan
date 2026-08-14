@@ -597,10 +597,55 @@ const handleConfirmProfile = () => {
 };
 const showComputedLoading = ref(false);
 const progressStopped = ref(false);
+let profileWatchdogTimer: ReturnType<typeof setTimeout> | null = null;
+let coverageWatchdogTimer: ReturnType<typeof setTimeout> | null = null;
+
+const clearProfileWatchdog = () => {
+  if (profileWatchdogTimer) {
+    clearTimeout(profileWatchdogTimer);
+    profileWatchdogTimer = null;
+  }
+};
+
+const clearCoverageWatchdog = () => {
+  if (coverageWatchdogTimer) {
+    clearTimeout(coverageWatchdogTimer);
+    coverageWatchdogTimer = null;
+  }
+};
+
+/** 开始新任务：允许接收进度，并忽略旧 task 的残留消息 */
+const armNewTask = (kind: "profile" | "coverage") => {
+  progressStopped.value = false;
+  $store.commit("setTaskId", "");
+  if (kind === "profile") {
+    clearProfileWatchdog();
+    showComputedLoading.value = true;
+    showProfileProgressBar.value = true;
+    profileProgressValue.value = 2;
+    profileWatchdogTimer = setTimeout(() => {
+      if (!showProfileProgressBar.value || profileProgressValue.value > 2) return;
+      hideProfileProgress();
+      ElMessage.error("剖面提取长时间无响应，请确认 Celery 服务是否在运行后重试");
+    }, 90000);
+  } else {
+    clearCoverageWatchdog();
+    showProgressBar.value = true;
+    progressValue.value = 2;
+    coverageWatchdogTimer = setTimeout(() => {
+      if (!showProgressBar.value || progressValue.value > 2) return;
+      showProgressBar.value = false;
+      progressValue.value = 0;
+      ElMessage.error("覆盖计算长时间无响应，请确认 Celery 服务是否在运行后重试");
+    }, 120000);
+  }
+};
 
 // 进度条停止
 const handleStopProgress = () => {
   progressStopped.value = true;
+  clearProfileWatchdog();
+  clearCoverageWatchdog();
   showProgressBar.value = false;
   progressValue.value = 0;
   showProfileProgressBar.value = false;
@@ -617,6 +662,8 @@ $bus.on("stopProgress", (payload?: { task_id?: string }) => {
     return;
   }
   progressStopped.value = true;
+  clearProfileWatchdog();
+  clearCoverageWatchdog();
   showProgressBar.value = false;
   progressValue.value = 0;
   showProfileProgressBar.value = false;
@@ -1156,14 +1203,12 @@ const startRectangleLossPrediction = (colors: string[]) => {
       prohibited_radius_m: CommunicationAreaProhibited.radius * 1000,
     };
   }
-  progressStopped.value = true;
-  showProgressBar.value = false;
+  armNewTask("coverage");
   $bus.emit("sendMessage", sendData);
 };
 
 const startRoundLossPrediction = (colors: string[]) => {
-  progressStopped.value = true;
-  showProgressBar.value = false;
+  armNewTask("coverage");
   $bus.emit("sendMessage", {
     type: "circle area coverage",
     name: drawLaunchSiteForm.name,
@@ -1196,10 +1241,7 @@ const clickChildMenu = async (name: any, index: number) => {
         hasFilled(SLPComputeForm.lng) &&
         hasFilled(SLPComputeForm.lat)
       ) {
-        showComputedLoading.value = true;
-        showProfileProgressBar.value = true;
-        profileProgressValue.value = 2;
-        progressStopped.value = true;
+        armNewTask("profile");
         $bus.emit("sendMessage", {
           id: SLPCompute_id.value ? SLPCompute_id.value : '',
           name: drawLaunchSiteForm.name,
@@ -1280,6 +1322,7 @@ watch(() => activeBtnIndex.value, (newVal, oldVal) => {
 
 // 设置单链分析表单数据
 const setSingleLinkFormData = (message: any) => {
+  clearProfileWatchdog();
   showComputedLoading.value = false;
   showProfileProgressBar.value = false;
   profileProgressValue.value = 0;
@@ -1364,8 +1407,9 @@ $bus.on("singlelink", setSingleLinkFormData);
 const isActiveTaskMessage = (taskId?: string) => {
   if (progressStopped.value) return false;
   const current = $store.state.taskId;
-  if (!current) return !taskId;
-  if (!taskId) return false;
+  // 新任务已启动、task_started 尚未到达时，先放行进度
+  if (!current) return true;
+  if (!taskId) return true;
   return String(taskId) === String(current);
 };
 
@@ -1373,6 +1417,7 @@ const updateProfileProgressBar = (payload: any) => {
   const value = Number(payload?.progress ?? payload);
   if (!isActiveTaskMessage(payload?.task_id)) return;
   if (Number.isNaN(value)) return;
+  clearProfileWatchdog();
   showProfileProgressBar.value = true;
   profileProgressValue.value = Number(value.toFixed(2));
   if (value >= 100) {
@@ -1382,6 +1427,7 @@ const updateProfileProgressBar = (payload: any) => {
 $bus.on("singlelinkProgress", updateProfileProgressBar);
 
 const hideProfileProgress = () => {
+  clearProfileWatchdog();
   showComputedLoading.value = false;
   showProfileProgressBar.value = false;
   profileProgressValue.value = 0;
@@ -1393,6 +1439,7 @@ const updateProgressBar = (payload: any) => {
   const value = Number(payload?.progress ?? payload);
   if (!isActiveTaskMessage(payload?.task_id)) return;
   if (Number.isNaN(value)) return;
+  clearCoverageWatchdog();
   showProgressBar.value = true;
   progressValue.value = Number(value.toFixed(2));
   if (value >= 100) {
@@ -1735,6 +1782,12 @@ const predefineColors = [
 
 // 颜色配置
 const applyColorBarToMap = async (closeDialog = true) => {
+  // 直接从 radio1 取色，避免 confirm 时 selectedColorBar 仍是上一帧（watch 滞后）
+  const palette = colorBarList[radio1.value]?.colors;
+  if (palette?.length) {
+    selectedColorBar.value = [...palette];
+  }
+
   localStorage.setItem("threshold_start", JSON.stringify(threshold_start.value));
   localStorage.setItem("threshold_end", JSON.stringify(threshold_end.value));
   localStorage.setItem("radio1", JSON.stringify(radio1.value));
@@ -1742,7 +1795,7 @@ const applyColorBarToMap = async (closeDialog = true) => {
   const id = rectangleArea_tif_id.value || circleArea_tif_id.value;
   const pngPath = CommunicationArea.activeName === "Rectangle" ? rectangleArea_image_url.value : circleArea_image_url.value;
   const tifPath = CommunicationArea.activeName === "Rectangle" ? rectangleArea_tif_url.value : circleArea_tif_url.value;
-  if (!id || !pngPath || !tifPath || !selectedColorBar.value) {
+  if (!id || !pngPath || !tifPath || !selectedColorBar.value?.length) {
     if (closeDialog) showColorBarConfigurationDialog.value = false;
     return;
   }
@@ -1787,6 +1840,8 @@ const route = useRoute();
 const router = useRouter();
 // 销毁
 onBeforeUnmount(() => {
+  clearProfileWatchdog();
+  clearCoverageWatchdog();
   stopClusterResultDrag();
   window.removeEventListener("keydown", onClusterResultEsc);
   graphicLayer.clear();

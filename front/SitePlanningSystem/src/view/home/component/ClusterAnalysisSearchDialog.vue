@@ -29,6 +29,7 @@
                         :model="clusterAnalysisForm"
                         label-position="top"
                         class="station-config__form"
+                        :show-message="false"
                     >
                         <section class="station-config__card">
                             <h3 class="station-config__card-title">参数配置</h3>
@@ -80,6 +81,7 @@
                             :model="clusterAnalysisForm"
                             label-position="top"
                             class="station-config__form"
+                            :show-message="false"
                         >
                             <el-form-item label="坐标">
                                 <div class="station-config__coord-row">
@@ -117,6 +119,7 @@
                             :model="clusterAnalysisForm"
                             label-position="top"
                             class="station-config__form"
+                            :show-message="false"
                         >
                             <el-form-item label="坐标">
                                 <div class="station-config__coord-row">
@@ -369,6 +372,7 @@
 import { computed, getCurrentInstance, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
 import { validateLongitude, validateLatitude } from "@/view/home/service/rules";
+import { shakeInvalidFormFields } from "@/view/home/service/formShake";
 
 let currentInstance = getCurrentInstance();
 let $bus = currentInstance?.appContext.config.globalProperties.$bus;
@@ -649,16 +653,16 @@ const clusterAnalysisFormRules = {
     limit_road_distance: [{ required: false, message: "请输入道路距离限制", trigger: "blur" }],
 };
 const rectangleRules = {
-    initialPointLng: [{ required: true, validator: validateLongitude, trigger: ["focus", "change"] }],
-    initialPointLat: [{ required: true, validator: validateLatitude, trigger: ["focus", "change"] }],
-    destinationPointLng: [{ required: true, validator: validateLongitude, trigger: ["focus", "change"] }],
-    destinationPointLat: [{ required: true, validator: validateLatitude, trigger: ["focus", "change"] }],
+    initialPointLng: [{ required: true, validator: validateLongitude, trigger: "change" }],
+    initialPointLat: [{ required: true, validator: validateLatitude, trigger: "change" }],
+    destinationPointLng: [{ required: true, validator: validateLongitude, trigger: "change" }],
+    destinationPointLat: [{ required: true, validator: validateLatitude, trigger: "change" }],
 };
 
 const roundRules = {
-    centerPointLng: [{ required: true, validator: validateLongitude, trigger: ["focus", "change"] }],
-    centerPointLat: [{ required: true, validator: validateLatitude, trigger: ["focus", "change"] }],
-    radius: [{ required: true, message: "请输入半径", trigger: "blur" }],
+    centerPointLng: [{ required: true, validator: validateLongitude, trigger: "change" }],
+    centerPointLat: [{ required: true, validator: validateLatitude, trigger: "change" }],
+    radius: [{ required: true, message: "请输入半径", trigger: "change" }],
 };
 
 const clusterAnalysisFormRef = ref(null);
@@ -667,151 +671,121 @@ const roundFormRef = ref(null);
 
 $bus.on("clusterAnalysisFailure", closeLoading);
 
+const validateFormOrShake = async (formRef) => {
+    const formEl = formRef?.value;
+    if (!formEl) return false;
+    try {
+        await formEl.validate();
+        return true;
+    } catch {
+        shakeInvalidFormFields(formEl);
+        return false;
+    }
+};
+
+const appendRelayAndProhibitedToData = (data) => {
+    let next = { ...data };
+    if (props.clusterAnalysisFormRelay.area_type === "relayRectangle" && props.clusterAnalysisFormRelay.initialPointLng) {
+        delete next.id;
+        next.type = "rectangle area clustering";
+        next.min_lon = props.clusterAnalysisFormRelay.initialPointLng;
+        next.min_lat = props.clusterAnalysisFormRelay.initialPointLat;
+        next.max_lon = props.clusterAnalysisFormRelay.destinationPointLng;
+        next.max_lat = props.clusterAnalysisFormRelay.destinationPointLat;
+    } else if (props.clusterAnalysisFormRelay.area_type === "relayRound" && props.clusterAnalysisFormRelay.centerPointLng) {
+        delete next.id;
+        next.type = "circle area clustering";
+        next.center_lon = props.clusterAnalysisFormRelay.centerPointLng;
+        next.center_lat = props.clusterAnalysisFormRelay.centerPointLat;
+        next.radius_m = props.clusterAnalysisFormRelay.radius * 1000;
+    }
+
+    if (
+        props.communicationAreaProhibitedForm.activeProhibitedName == "Rectangle" &&
+        props.communicationAreaProhibitedForm.initialPointLng
+    ) {
+        next = {
+            ...next,
+            prohibited_area_type: "rectangle",
+            prohibited_min_lon: props.communicationAreaProhibitedForm.initialPointLng,
+            prohibited_min_lat: props.communicationAreaProhibitedForm.initialPointLat,
+            prohibited_max_lon: props.communicationAreaProhibitedForm.destinationPointLng,
+            prohibited_max_lat: props.communicationAreaProhibitedForm.destinationPointLat,
+        };
+    } else if (
+        props.communicationAreaProhibitedForm.activeProhibitedName == "Round" &&
+        props.communicationAreaProhibitedForm.centerPointLng
+    ) {
+        next = {
+            ...next,
+            prohibited_area_type: "circle",
+            prohibited_center_lon: props.communicationAreaProhibitedForm.centerPointLng,
+            prohibited_center_lat: props.communicationAreaProhibitedForm.centerPointLat,
+            prohibited_radius_m: props.communicationAreaProhibitedForm.radius * 1000,
+        };
+    }
+    return next;
+};
+
+const emitClusterAreas = () => {
+    $bus.emit("setCommunicationArea", props.clusterAnalysisForm);
+    if (props.clusterAnalysisFormRelay.initialPointLng || props.clusterAnalysisFormRelay.centerPointLng) {
+        $bus.emit("setCommunicationArea", props.clusterAnalysisFormRelay);
+    }
+    if (
+        props.communicationAreaProhibitedForm.initialPointLng ||
+        props.communicationAreaProhibitedForm.centerPointLng
+    ) {
+        $bus.emit("setCommunicationArea", props.communicationAreaProhibitedForm);
+    }
+};
+
 const handleConfirmClusterAnalysis = async () => {
-    await clusterAnalysisFormRef.value?.validate((valid) => {
-        if (!valid) {
-            ElMessage.error("请填写完整信息");
-            return;
-        }
-    });
+    // 必填项未填全时直接中止，不发起计算
+    if (!(await validateFormOrShake(clusterAnalysisFormRef))) return;
 
     if (props.clusterAnalysisForm.area_type === "smallRectangle") {
-        await rectangleFormRef.value?.validate((valid) => {
-            if (valid) {
-                btnloading.value = true;
-                $bus.emit("setCommunicationArea", props.clusterAnalysisForm);
-                if (props.clusterAnalysisFormRelay.initialPointLng || props.clusterAnalysisFormRelay.centerPointLng) {
-                    $bus.emit("setCommunicationArea", props.clusterAnalysisFormRelay);
-                }
-                let data = {
-                    type: "rectangle area clustering",
-                    id: props.id,
-                    tif_path: props.tif_path,
-                    loss_threshold: props.clusterAnalysisForm.loss_threshold,
-                    limit_road_distance: props.clusterAnalysisForm.limit_road_distance,
-                    eps_cells: props.clusterAnalysisForm.eps_cells,
-                    min_samples: props.clusterAnalysisForm.min_samples,
-                    p: props.clusterAnalysisForm.p,
-                    min_lon: props.clusterAnalysisForm.initialPointLng,
-                    min_lat: props.clusterAnalysisForm.initialPointLat,
-                    max_lon: props.clusterAnalysisForm.destinationPointLng,
-                    max_lat: props.clusterAnalysisForm.destinationPointLat,
-                };
-                if (props.clusterAnalysisFormRelay.area_type === "relayRectangle" && props.clusterAnalysisFormRelay.initialPointLng) {
-                    delete data.id;
-                    data.type = "rectangle area clustering";
-                    data.min_lon = props.clusterAnalysisFormRelay.initialPointLng;
-                    data.min_lat = props.clusterAnalysisFormRelay.initialPointLat;
-                    data.max_lon = props.clusterAnalysisFormRelay.destinationPointLng;
-                    data.max_lat = props.clusterAnalysisFormRelay.destinationPointLat;
-                } else if (props.clusterAnalysisFormRelay.area_type === "relayRound" && props.clusterAnalysisFormRelay.centerPointLng) {
-                    delete data.id;
-                    data.type = "circle area clustering";
-                    data.center_lon = props.clusterAnalysisFormRelay.centerPointLng;
-                    data.center_lat = props.clusterAnalysisFormRelay.centerPointLat;
-                    data.radius_m = props.clusterAnalysisFormRelay.radius * 1000;
-                }
-                if (
-                    props.communicationAreaProhibitedForm.activeProhibitedName == "Rectangle" &&
-                    props.communicationAreaProhibitedForm.initialPointLng
-                ) {
-                    data = {
-                        ...data,
-                        prohibited_area_type: "rectangle",
-                        prohibited_min_lon: props.communicationAreaProhibitedForm.initialPointLng,
-                        prohibited_min_lat: props.communicationAreaProhibitedForm.initialPointLat,
-                        prohibited_max_lon: props.communicationAreaProhibitedForm.destinationPointLng,
-                        prohibited_max_lat: props.communicationAreaProhibitedForm.destinationPointLat,
-                    };
-                } else if (
-                    props.communicationAreaProhibitedForm.activeProhibitedName == "Round" &&
-                    props.communicationAreaProhibitedForm.centerPointLng
-                ) {
-                    data = {
-                        ...data,
-                        prohibited_area_type: "circle",
-                        prohibited_center_lon: props.communicationAreaProhibitedForm.centerPointLng,
-                        prohibited_center_lat: props.communicationAreaProhibitedForm.centerPointLat,
-                        prohibited_radius_m: props.communicationAreaProhibitedForm.radius * 1000,
-                    };
-                }
-                $bus.emit("sendMessage", data);
-            } else {
-                ElMessage.error("请填写完整信息");
-            }
-        });
-    } else if (props.clusterAnalysisForm.area_type === "smallRound") {
-        await roundFormRef.value?.validate((valid) => {
-            if (valid) {
-                btnloading.value = true;
-                $bus.emit("setCommunicationArea", props.clusterAnalysisForm);
-                if (props.clusterAnalysisFormRelay.initialPointLng || props.clusterAnalysisFormRelay.centerPointLng) {
-                    $bus.emit("setCommunicationArea", props.clusterAnalysisFormRelay);
-                }
-                if (
-                    props.communicationAreaProhibitedForm.initialPointLng ||
-                    props.communicationAreaProhibitedForm.centerPointLng
-                ) {
-                    $bus.emit("setCommunicationArea", props.communicationAreaProhibitedForm);
-                }
-                let data = {
-                    type: "circle area clustering",
-                    id: props.id,
-                    tif_path: props.tif_path,
-                    loss_threshold: props.clusterAnalysisForm.loss_threshold,
-                    limit_road_distance: props.clusterAnalysisForm.limit_road_distance,
-                    eps_cells: props.clusterAnalysisForm.eps_cells,
-                    min_samples: props.clusterAnalysisForm.min_samples,
-                    p: props.clusterAnalysisForm.p,
-                    center_lon: props.clusterAnalysisForm.centerPointLng,
-                    center_lat: props.clusterAnalysisForm.centerPointLat,
-                    radius_m: props.clusterAnalysisForm.radius * 1000,
-                };
+        if (!(await validateFormOrShake(rectangleFormRef))) return;
 
-                if (props.clusterAnalysisFormRelay.area_type === "relayRectangle" && props.clusterAnalysisFormRelay.initialPointLng) {
-                    delete data.id;
-                    data.type = "rectangle area clustering";
-                    data.min_lon = props.clusterAnalysisFormRelay.initialPointLng;
-                    data.min_lat = props.clusterAnalysisFormRelay.initialPointLat;
-                    data.max_lon = props.clusterAnalysisFormRelay.destinationPointLng;
-                    data.max_lat = props.clusterAnalysisFormRelay.destinationPointLat;
-                } else if (props.clusterAnalysisFormRelay.area_type === "relayRound" && props.clusterAnalysisFormRelay.centerPointLng) {
-                    delete data.id;
-                    data.type = "circle area clustering";
-                    data.center_lon = props.clusterAnalysisFormRelay.centerPointLng;
-                    data.center_lat = props.clusterAnalysisFormRelay.centerPointLat;
-                    data.radius_m = props.clusterAnalysisFormRelay.radius * 1000;
-                }
-
-                if (
-                    props.communicationAreaProhibitedForm.activeProhibitedName == "Rectangle" &&
-                    props.communicationAreaProhibitedForm.initialPointLng
-                ) {
-                    data = {
-                        ...data,
-                        prohibited_area_type: "rectangle",
-                        prohibited_min_lon: props.communicationAreaProhibitedForm.initialPointLng,
-                        prohibited_min_lat: props.communicationAreaProhibitedForm.initialPointLat,
-                        prohibited_max_lon: props.communicationAreaProhibitedForm.destinationPointLng,
-                        prohibited_max_lat: props.communicationAreaProhibitedForm.destinationPointLat,
-                    };
-                } else if (
-                    props.communicationAreaProhibitedForm.activeProhibitedName == "Round" &&
-                    props.communicationAreaProhibitedForm.centerPointLng
-                ) {
-                    data = {
-                        ...data,
-                        prohibited_area_type: "circle",
-                        prohibited_center_lon: props.communicationAreaProhibitedForm.centerPointLng,
-                        prohibited_center_lat: props.communicationAreaProhibitedForm.centerPointLat,
-                        prohibited_radius_m: props.communicationAreaProhibitedForm.radius * 1000,
-                    };
-                }
-                $bus.emit("sendMessage", data);
-            } else {
-                ElMessage.error("请填写完整信息");
-            }
+        btnloading.value = true;
+        emitClusterAreas();
+        const data = appendRelayAndProhibitedToData({
+            type: "rectangle area clustering",
+            id: props.id,
+            tif_path: props.tif_path,
+            loss_threshold: props.clusterAnalysisForm.loss_threshold,
+            limit_road_distance: props.clusterAnalysisForm.limit_road_distance,
+            eps_cells: props.clusterAnalysisForm.eps_cells,
+            min_samples: props.clusterAnalysisForm.min_samples,
+            p: props.clusterAnalysisForm.p,
+            min_lon: props.clusterAnalysisForm.initialPointLng,
+            min_lat: props.clusterAnalysisForm.initialPointLat,
+            max_lon: props.clusterAnalysisForm.destinationPointLng,
+            max_lat: props.clusterAnalysisForm.destinationPointLat,
         });
+        $bus.emit("sendMessage", data);
+        return;
+    }
+
+    if (props.clusterAnalysisForm.area_type === "smallRound") {
+        if (!(await validateFormOrShake(roundFormRef))) return;
+
+        btnloading.value = true;
+        emitClusterAreas();
+        const data = appendRelayAndProhibitedToData({
+            type: "circle area clustering",
+            id: props.id,
+            tif_path: props.tif_path,
+            loss_threshold: props.clusterAnalysisForm.loss_threshold,
+            limit_road_distance: props.clusterAnalysisForm.limit_road_distance,
+            eps_cells: props.clusterAnalysisForm.eps_cells,
+            min_samples: props.clusterAnalysisForm.min_samples,
+            p: props.clusterAnalysisForm.p,
+            center_lon: props.clusterAnalysisForm.centerPointLng,
+            center_lat: props.clusterAnalysisForm.centerPointLat,
+            radius_m: props.clusterAnalysisForm.radius * 1000,
+        });
+        $bus.emit("sendMessage", data);
     }
 };
 
@@ -1204,9 +1178,9 @@ onBeforeUnmount(() => {
         color: #6b7280 !important;
     }
 
-    :deep(.station-config__form .el-form-item__error) {
-        color: #ff7b7b;
-        font-size: 11px;
+    :deep(.station-config__form .el-form-item.is-error .el-input__wrapper),
+    :deep(.station-config__form .el-form-item.is-error .el-select__wrapper) {
+        border-color: rgba(248, 113, 113, 0.7) !important;
     }
 }
 

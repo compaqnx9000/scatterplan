@@ -48,6 +48,7 @@
                         :model="CommunicationArea"
                         label-position="top"
                         class="station-config__form"
+                        :show-message="false"
                     >
                         <section class="station-config__card">
                             <h3 class="station-config__card-title">矩形区域</h3>
@@ -89,6 +90,7 @@
                         :model="CommunicationArea"
                         label-position="top"
                         class="station-config__form"
+                        :show-message="false"
                     >
                         <section class="station-config__card">
                             <h3 class="station-config__card-title">圆形区域</h3>
@@ -157,20 +159,21 @@
 import { computed, getCurrentInstance, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
 import { validateLongitude, validateLatitude } from "@/view/home/service/rules";
+import { shakeInvalidFormFields } from "@/view/home/service/formShake";
 
 let currentInstance = getCurrentInstance();
 let $bus = currentInstance?.appContext.config.globalProperties.$bus;
 
 const RectangleRules = {
-    initialPointLng: [{ required: true, validator: validateLongitude, trigger: ["focus", "change"] }],
-    initialPointLat: [{ required: true, validator: validateLatitude, trigger: ["focus", "change"] }],
-    destinationPointLng: [{ required: true, validator: validateLongitude, trigger: ["focus", "change"] }],
-    destinationPointLat: [{ required: true, validator: validateLatitude, trigger: ["focus", "change"] }],
+    initialPointLng: [{ required: true, validator: validateLongitude, trigger: "change" }],
+    initialPointLat: [{ required: true, validator: validateLatitude, trigger: "change" }],
+    destinationPointLng: [{ required: true, validator: validateLongitude, trigger: "change" }],
+    destinationPointLat: [{ required: true, validator: validateLatitude, trigger: "change" }],
 };
 const RoundRules = {
-    centerPointLng: [{ required: true, validator: validateLongitude, trigger: ["focus", "change"] }],
-    centerPointLat: [{ required: true, validator: validateLatitude, trigger: ["focus", "change"] }],
-    radius: [{ required: true, message: "请输入半径", trigger: ["focus", "change"] }],
+    centerPointLng: [{ required: true, validator: validateLongitude, trigger: "change" }],
+    centerPointLat: [{ required: true, validator: validateLatitude, trigger: "change" }],
+    radius: [{ required: true, message: "请输入半径", trigger: "change" }],
 };
 const rules = {
     Rectangle: RectangleRules,
@@ -332,7 +335,7 @@ const handleConfirmCommunicationArea = async () => {
                 $bus.emit("setCommunicationArea", props.CommunicationArea);
                 setVisible(false);
             } else {
-                ElMessage.error("请填写完整信息");
+                shakeInvalidFormFields(RectangleFormRef.value);
             }
         });
     } else if (props.CommunicationArea.activeName === "Round") {
@@ -341,7 +344,7 @@ const handleConfirmCommunicationArea = async () => {
                 $bus.emit("setCommunicationArea", props.CommunicationArea);
                 setVisible(false);
             } else {
-                ElMessage.error("请填写完整信息");
+                shakeInvalidFormFields(roundFormRef.value);
             }
         });
     }
@@ -763,9 +766,9 @@ onBeforeUnmount(() => {
         color: #6b7280 !important;
     }
 
-    :deep(.station-config__form .el-form-item__error) {
-        color: #ff7b7b;
-        font-size: 11px;
+    :deep(.station-config__form .el-form-item.is-error .el-input__wrapper),
+    :deep(.station-config__form .el-form-item.is-error .el-select__wrapper) {
+        border-color: rgba(248, 113, 113, 0.7) !important;
     }
 }
 

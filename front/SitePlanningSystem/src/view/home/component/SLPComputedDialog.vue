@@ -29,6 +29,7 @@
           label-position="top"
           class="station-config__form"
           require-asterisk-position="right"
+          :show-message="false"
         >
           <div class="station-config__columns station-config__columns--single">
             <section class="station-config__card">
@@ -107,8 +108,8 @@
 //@ts-nocheck
 
 import { computed, getCurrentInstance, nextTick, onBeforeUnmount, ref, watch } from "vue";
-import { ElMessage } from "element-plus";
 import { validateLongitude, validateLatitude } from "@/view/home/service/rules";
+import { shakeInvalidFormFields } from "@/view/home/service/formShake";
 
 let currentInstance = getCurrentInstance();
 let $bus = currentInstance?.appContext.config.globalProperties.$bus;
@@ -132,9 +133,9 @@ const props = defineProps({
 const emit = defineEmits(["update:visible", "update:drawLaunchSiteForm"]);
 
 const rules = {
-  lng: [{ required: true, validator: validateLongitude, trigger: ["focus", "change"] }],
-  lat: [{ required: true, validator: validateLatitude, trigger: ["focus", "change"] }],
-  point_name: [{ required: true, message: "请输入站点名称", trigger: ["focus", "change"] }],
+  lng: [{ required: true, validator: validateLongitude, trigger: "change" }],
+  lat: [{ required: true, validator: validateLatitude, trigger: "change" }],
+  point_name: [{ required: true, message: "请输入站点名称", trigger: "change" }],
 };
 
 const SLPCompute = ref(null);
@@ -303,7 +304,7 @@ const handleConfirmSLPComputed = async (formEl: any) => {
       });
       emit("update:visible", false);
     } else {
-      ElMessage.error("请填写完整信息");
+      shakeInvalidFormFields(formEl);
     }
   });
 };
@@ -609,9 +610,8 @@ onBeforeUnmount(() => {
     color: #6b7280 !important;
   }
 
-  :deep(.station-config__form .el-form-item__error) {
-    color: #ff7b7b;
-    font-size: 11px;
+  :deep(.station-config__form .el-form-item.is-error .el-input__wrapper) {
+    border-color: rgba(248, 113, 113, 0.7) !important;
   }
 }
 
