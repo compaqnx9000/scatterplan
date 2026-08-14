@@ -1,0 +1,71 @@
+框架用途：用于制作大屏相关数字孪生类项目，不适用于管理平台，目的是为了使得项目结构更加简洁
+
+项目技术栈：
+vite vue3 ts axios vue-router vuex scss mars3D
+
+node 版本：
+    Vite 不再支持 Node 12 / 13 / 15，因为上述版本已经进入了 EOL 阶段。现在你必须使用 Node 14.18+ / 16+ 版本。
+
+vtie 中所有的 require() 都需改为 import 方式引入,
+    如: let path = require("path")
+    改为：import path from "path"       vite 支持 裸模块 导入
+
+mars3D:
+    所有页面的地图均集成到 layout/components/map 中，利用事件总线进行数据交互
+
+本地资源动态使用：
+    直接引入资源：
+        import icon_suit2 from "@/assets/image/icon_suit2.png"
+    动态引入资源：
+        import {getAssetsSrc} from "@/util/index"
+        getAssetsSrc("icon_suit2.png")
+
+
+项目配置：
+    请求转发
+    路径别名
+    scss 全局变量
+    请求封装
+    区分开发环境与生产环境
+    自动导入 Vue 相关函数（如：ref, reactive, toRef ），所以直接使用即可
+
+项目目录结构：
+    |--src
+        |--assets                   公共资源
+            |--style                公共样式
+                |--publicStyle      全局变量
+            |--util                 公共工具
+                |--index.ts         
+
+        |--component                组件库
+            |--public               可共享组件
+            |-- ***.vue             可直接使用的单组件
+            |-- base***             组合组件目录名
+                |-- index.vue       组合组件主要组件
+                |-- ***             组合组件其他文件
+        
+        |--request                  请求目录
+            |--request.ts           封装请求
+            |--publicApi.ts         通用接口存放，如数据字典
+            |--module name.ts       模块中的接口
+        
+        |--router                   项目路由
+            |--index.ts
+        
+        |--store                    项目通用数据存储
+            |--index.ts
+        
+        |--view                     页面
+            |--login                模块文件名
+                |-- base+模块文件名  模块通用组件、资源、js
+                |-- ***             模块页面
+        
+        |--app.vue                  根组件（暂未使用页面缓存）
+        |--index.scss               全局属性
+        |--main.ts
+    ***
+    |--.env.development         开发环境配置
+    |--.env.production         生产环境配置
+    |--tsconfig.json            ts配置项
+    |--tsconfig.node.json       ts约束项
+    |--vite.config.ts           vite配置（相当于 2 版本的 vue.config）

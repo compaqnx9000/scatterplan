@@ -1,0 +1,55 @@
+# ScatterPlan monorepo
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.log
+*.bak
+*.swp
+.idea/
+.vscode/
+
+# Installers / local data (not application source)
+*.exe
+*.zip
+*.rar
+*.tif
+*.tfw
+*.sql
+Redis-x64-*/
+DanDong/
+shp/
+bk.sql
+bk(1).sql
+
+# Frontend
+front/**/node_modules/
+front/**/dist/
+front/**/dist-ssr/
+front/**/*.local
+front/**/.env
+front/**/.env.*
+front/**/.DS_Store
+
+# Backend
+backend/.venv/
+backend/venv/
+backend/env/
+backend/ENV/
+backend/**/__pycache__/
+backend/**/*.py[cod]
+backend/.env
+backend/.env.*
+backend/*.env
+backend/db.sqlite3
+backend/**/*.sqlite3
+backend/media/areacoverage/
+backend/media/singlelink/
+backend/media/stations/
+backend/staticfiles/
+backend/static/
+backend/packages/
+backend/.mypy_cache/
+backend/.pytest_cache/
+backend/.coverage
+backend/current_env.txt
+backend/test.json

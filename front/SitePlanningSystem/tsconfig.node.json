@@ -1,0 +1,11 @@
+// ts 约束
+{
+    "compilerOptions": {
+      "composite": true,
+      "module": "ESNext",
+      "moduleResolution": "Node",
+      "allowSyntheticDefaultImports": true
+    },
+    "include": ["vite.config.ts"]   //包含vit配置
+  }
+  

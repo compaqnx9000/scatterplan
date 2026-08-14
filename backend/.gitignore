@@ -1,0 +1,93 @@
+# =========================
+# Django & Python 基础忽略
+# =========================
+
+# Python 编译文件
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django 运行生成文件
+db.sqlite3
+media/areacoverage/*
+media/singlelink/*
+media/stations/*
+staticfiles/
+static/
+*.log
+
+# 本地配置文件
+.env
+*.env
+.env.*
+
+# =========================
+# 虚拟环境
+# =========================
+venv/
+env/
+ENV/
+.venv/
+pip-wheel-metadata/
+pip-log.txt
+
+# =========================
+# IDE / 编辑器相关
+# =========================
+
+# VSCode
+.vscode/
+
+# PyCharm
+.idea/
+
+# Sublime
+*.sublime-project
+*.sublime-workspace
+
+# =========================
+# 操作系统生成文件
+# =========================
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# =========================
+# 单元测试 / 覆盖率
+# =========================
+.coverage
+.tox/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# =========================
+# Docker / 容器
+# =========================
+*.pid
+*.seed
+*.tar
+*.bak
+*.swp
+
+# =========================
+# 其他常见忽略
+# =========================
+*.pot
+*.mo
+*.db
+*.sqlite3
+build/
+dist/
+*.egg-info/
+.mypy_cache/
+.pytest_cache/
+
+# 存放三方库whl文件
+packages/

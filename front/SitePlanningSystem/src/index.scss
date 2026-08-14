@@ -1,0 +1,1217 @@
+@font-face {
+  // font-family: 'puhuiti';
+  // src: url('@/assets/fonts/Alibaba-PuHuiTi-Bold.ttf')
+}
+
+:root {
+  --gotham-bg: #07090c;
+  --gotham-bg-elevated: #0d1117;
+  --gotham-panel: rgba(10, 14, 20, 0.92);
+  --gotham-panel-solid: #0f141c;
+  --gotham-border: rgba(232, 226, 210, 0.12);
+  --gotham-border-strong: rgba(232, 226, 210, 0.22);
+  --gotham-text: #e8e2d2;
+  --gotham-text-muted: #8b8790;
+  --gotham-text-dim: #5c5863;
+  --gotham-accent: #d4a017;
+  --gotham-accent-soft: rgba(212, 160, 23, 0.15);
+  --gotham-accent-hover: #e8b52a;
+  --gotham-danger: #c45c4a;
+  --gotham-success: #5a9e6f;
+  --gotham-info: #6a8a9e;
+  --gotham-rail-width: 56px;
+  --gotham-sidebar-width: 280px;
+  --font-ui: 'IBM Plex Sans', 'Noto Sans SC', sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Cascadia Mono', monospace;
+  --font-display: 'IBM Plex Sans', 'Noto Sans SC', sans-serif;
+  --form-font-size: 12px;
+  --form-label-size: 12px;
+  --el-font-size-base: 12px;
+  --el-font-family: 'IBM Plex Mono', 'Cascadia Mono', monospace;
+}
+
+/* 把我们所有标签的内外边距清零（字体勿写在 * 上，否则会盖住挂到 body 的下拉等浮层） */
+* {
+  margin: 0;
+  padding: 0;
+  cursor: default;
+  word-break: break-all;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+input,
+textarea,
+[contenteditable="true"] {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+html,
+body {
+  font-family: var(--font-ui);
+  font-size: 16px;
+}
+
+/* Element Plus 变量：覆盖其 index.css 里 :root 的 14px / Helvetica */
+:root,
+html.dark {
+  --el-font-size-base: 12px;
+  --el-font-size-extra-small: 12px;
+  --el-select-font-size: 12px;
+  --el-font-family: 'IBM Plex Mono', 'Cascadia Mono', 'Noto Sans SC', monospace;
+}
+
+/* em 和 i 斜体的文字都不倾斜 */
+
+em,
+i {
+  font-style: normal;
+}
+
+/* 去掉每个li前面的小圆点 */
+
+li {
+  list-style: none;
+}
+
+img {
+  border: 0;
+  /* 为了照顾低版本浏览器,如果 图片的外面包含了链接 会出现边框的问题 */
+  vertical-align: middle;
+  /* 解决图片底侧出现空白缝隙的问题 */
+}
+
+button {
+  cursor: pointer;
+  /* 当我们鼠标经过button按钮时,鼠标变成小手的样子 */
+}
+
+a {
+  color: $text-color-grey;
+  // text-decoration: none
+}
+
+a:hover {
+  color: $color-primary;
+}
+
+button,
+input {
+  font-family: Microsoft YaHei, Heiti SC, tahoma, arial, Hiragino Sans GB,
+    "\5B8B\4F53", sans-serif;
+  font-family: 'puhuiti';
+}
+
+body {
+  /* 抗锯齿性,避免文字被放大后会产生锯齿 */
+  -webkit-font-smoothing: antialiased;
+  background-color: #fff;
+  /* 12px/1.5 表示所有字体的大小为12px,1.5倍的行高 */
+  /* "\5B8B\4F53" 代表的是宋体，用这种方式，浏览器的兼容性会比较好。 把中文字体的名称用相应的Unicode编码来代替，这样就可以有效地避免浏览器解释CSS代码时出现乱码的情况*/
+  // font: 12px/1.5 Microsoft YaHei, Heiti SC, tahoma, arial, Hiragino Sans GB,
+  //   "\5B8B\4F53", sans-serif;
+  color: #666;
+}
+
+input,
+button,
+select,
+textarea {
+  outline: none; //去除谷歌浏览器元素被点击时出现的黑色边框
+}
+
+.hide,
+.none {
+  display: none;
+}
+
+/* 清除浮动 */
+
+.clearfix:after {
+  visibility: hidden;
+  clear: both;
+  display: block;
+  content: ".";
+  height: 0;
+}
+
+
+// 统一调整一下多选框的样式
+/* 隐藏默认的复选框 */
+// input[type="checkbox"] {
+//   appearance: none;
+//   -webkit-appearance: none;
+//   -moz-appearance: none;
+//   width: 20px;
+//   height: 20px;
+//   border: 2px solid #ccc;
+//   border-radius: 4px;
+//   outline: none;
+//   cursor: pointer;
+//   transition: all 0.2s ease-in-out;
+//   display: inline-flex;
+//   align-items: center;
+//   justify-content: center;
+//   vertical-align: middle;
+// }
+
+// /* 选中时的样式 */
+// input[type="checkbox"]:checked {
+//   box-shadow: 0px 0px 14px 0px #b0d3f4 inset;
+//   box-sizing: border-box;
+//   border: 2px solid #00ddff;
+//   box-sizing: border-box;
+// }
+
+// //   /* 选中时的对勾样式 */
+// input[type="checkbox"]:checked::after {
+//   content: "\2714";
+//   color: white;
+//   font-size: 12px;
+//   line-height: 1;
+//   position: absolute;
+//   transition: opacity 0.2s ease-in-out;
+// }
+
+.ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px; // height对于纵向滚动条来说没有用，但是对于横向就有用了
+  border-radius: 10px;
+}
+
+// 滑块
+::-webkit-scrollbar-thumb {
+  border-radius: 10px;
+  background-color: #14d4f4;
+  // height: 50px; // 整体设了宽高后，这里宽高是无效的
+  // width: 50px;
+}
+
+// 轨道
+::-webkit-scrollbar-track {
+  border-radius: 10px;
+}
+
+
+
+/* 定义自定义字体 */
+@font-face {
+  // font-family: 'youshebiaotihei';
+  // src: url("./assets/fonts/youshebiaotihei.TTF");
+  font-weight: normal;
+  font-style: normal;
+}
+
+/////////////        element-plus 直接修改主题色一直不生效，这里只能临时手动一个一个调整         /////////////////////////
+
+.el-button {
+  --el-button-bg-color: #FFFFFF !important;
+  --el-button-border-color: #DCDFE6 !important;
+}
+
+.el-button--primary {
+  --el-button-bg-color:  #409EFF !important;
+  --el-button-text-color: #FFFFFF !important;
+}
+
+// .el-button--primary:hover {
+//   --el-button-bg-color: #00B8D4 !important;
+// }
+
+
+
+.mars3d-popup-content {
+  margin: 0px !important;
+}
+
+.el-form-item__label {
+  // color: #fff !important;
+  color: #555555 !important;
+  font-size: 16px !important;
+  width: 240px !important;
+  // flex-grow: 1;
+  white-space: nowrap;
+
+  // color: #fff;
+}
+
+
+// 去除默认弹框底色
+.mars3d-popup-background {
+  background: none !important;
+  border: none !important;
+  box-shadow: 0 0px 0px rgba(0, 0, 0, 0) !important;
+}
+
+// 地图弹框样式
+.resourceTemplent {
+  .mars3d-popup-background {
+    background: none;
+    border: none;
+    box-shadow: 0 0px 0px rgba(0, 0, 0, 0);
+  }
+
+  .mars3d-popup-content {
+    margin: 0px;
+  }
+
+  .mars3d-popup-close-button {
+    right: 10px;
+    top: 10px;
+  }
+
+  // 资源上图点位弹框信息
+  &__mapAddressBox {
+    width: 450px;
+    height: 300px;
+    background: no-repeat url('@/assets/images/components/centerData.png');
+    background-size: 100% 100%;
+    padding: 10px 20px 30px 20px;
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+
+    &__title {
+      font-size: 24px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    &__info {
+      // flex: 1;
+      height: 214px;
+      overflow-y: scroll;
+    }
+
+    &__keyValue {
+      display: flex;
+      margin-bottom: 10px;
+
+      &__img {
+        width: 100%;
+      }
+    }
+
+    &__key {
+      width: 120px;
+    }
+
+    &__value {
+      flex: 1
+    }
+  }
+
+
+  // 资源上图点位小弹框信息
+  &__mapAddressBoxMin {
+    width: 260px;
+    height: 400px;
+    background: no-repeat url('@/assets/images/attractInvestment/mapRegionAddressBg.png');
+    background-size: 100% 100%;
+    display: flex;
+    flex-direction: column;
+
+    &__title {
+      font-size: 24px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    &__info {
+      flex: 1;
+      height: 0;
+      overflow-y: scroll;
+    }
+
+    &__keyValue {
+      display: flex;
+      margin-bottom: 10px;
+    }
+
+    &__key {
+      width: 60px;
+    }
+
+    &__value {
+      flex: 1
+    }
+  }
+
+  // 资源上图区域面弹框信息
+  &__mapRegionAddress {
+    width: 450px;
+    height: 320px;
+    background: no-repeat url('@/assets/images/components/centerData.png');
+    background-size: 100% 100%;
+    padding: 10px 20px;
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+
+    &__title {
+      height: 30px;
+      font-size: 24px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    &__info {
+      flex: 1;
+      height: 0;
+      overflow-y: scroll;
+      margin-top: 14px;
+      margin-bottom: 30px;
+    }
+
+    &__keyValue {
+      display: flex;
+      font-size: 16px;
+      margin: 0 10px 8px 10px;
+      line-height: 30px;
+      border-bottom: 1px solid #00DDFF;
+    }
+
+    &__key {
+      width: 80px;
+    }
+
+    &__value {
+      flex: 1;
+      background: linear-gradient(270deg, rgba(0, 112, 130, 0) 0%, rgba(0, 166, 191, 0.3) 100%);
+      padding-left: 14px;
+      word-break: break-all;
+    }
+
+    &__richText {
+      // border: 1px solid #00DDFF;
+      overflow-x: scroll;
+
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        table-layout: auto;
+        margin: 0px;
+        border-spacing: 0;
+        text-align: center;
+
+        tr:first-child {
+          background: #00DDFF20;
+        }
+
+        td {
+          // width: 120px;
+          border: 1px solid #00DDFF;
+          word-break: keep-all;
+          white-space: nowrap;
+          padding: 0 4px;
+          // margin: 0px;
+        }
+      }
+    }
+  }
+
+}
+
+
+
+/********** 面板：倾斜指向左下角的div1.png图片面板样式 ***********/
+
+.marsImgPanel1 {
+  position: relative;
+  width: 144px;
+  height: 92px;
+  background: rgba(42, 42, 42, 0.8);
+  border-radius: 4px;
+  transform: scale(1.2);
+
+  background: url("@/assets/images/addressIcon/icon9.png");
+  background-size: 100%;
+  -webkit-background-size: cover;
+  -moz-background-size: cover;
+  -o-background-size: cover;
+
+  -webkit-animation: mymove 5s infinite;
+  animation: mymove 5s infinite;
+  animation-duration: 5s;
+  animation-timing-function: ease;
+  animation-delay: 0s;
+  animation-iteration-count: infinite;
+  animation-direction: normal;
+  animation-fill-mode: none;
+  animation-play-state: running;
+  animation-name: mymove;
+}
+
+.marsImgPanel1 .title {
+  position: absolute;
+  // left: 54px;
+  width: 122px;
+  left: 10px;
+  text-align: center;
+  height: 34px;
+  line-height: 34px;
+  color: rgba(255, 255, 255, 1);
+  text-shadow: 0px 0px 9px rgba(0, 0, 0, 0.75);
+  // border: 1px solid red;
+  // overflow-x: scroll;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+.marsImgPanel2 {
+  position: relative;
+  width: 165px;
+  height: 92px;
+  background: rgba(42, 42, 42, 0.8);
+  border-radius: 4px;
+  transform: scale(1.2);
+  background: url("@/assets/images/addressIcon/icon10.png");
+  background-size: 100%;
+  -webkit-background-size: cover;
+  -moz-background-size: cover;
+  -o-background-size: cover;
+
+  -webkit-animation: mymove 5s infinite;
+  animation: mymove 5s infinite;
+  animation-duration: 5s;
+  animation-timing-function: ease;
+  animation-delay: 0s;
+  animation-iteration-count: infinite;
+  animation-direction: normal;
+  animation-fill-mode: none;
+  animation-play-state: running;
+  animation-name: mymove;
+}
+
+.marsImgPanel2 .title {
+  position: absolute;
+  // left: 54px;
+  width: 160px;
+  left: 10px;
+  text-align: center;
+  height: 34px;
+  line-height: 34px;
+  color: rgba(255, 255, 255, 1);
+  text-shadow: 0px 0px 9px rgba(0, 0, 0, 0.75);
+  // border: 1px solid red;
+  // overflow-x: scroll;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// 绿色的
+/********** 面板：倾斜指向左下角的div1.png图片面板样式 ***********/
+.marsImgPanelGreen {
+  position: relative;
+  width: 200px;
+  height: 134px;
+  background: rgba(42, 42, 42, 0.8);
+  border-radius: 4px;
+
+  background: url("@/assets/images/components/marsImgPanel2.png");
+  background-size: 100%;
+  -webkit-background-size: cover;
+  -moz-background-size: cover;
+  -o-background-size: cover;
+
+  -webkit-animation: mymove 5s infinite;
+  animation: mymove 5s infinite;
+  animation-duration: 5s;
+  animation-timing-function: ease;
+  animation-delay: 0s;
+  animation-iteration-count: infinite;
+  animation-direction: normal;
+  animation-fill-mode: none;
+  animation-play-state: running;
+  animation-name: mymove;
+}
+
+.marsImgPanelGreen .title {
+  position: relative;
+  top: 20px;
+  left: 54px;
+  font-size: 12px;
+  text-align: left;
+  color: rgba(255, 255, 255, 1);
+  text-shadow: 0px 0px 9px rgba(0, 0, 0, 0.75);
+}
+
+// 资源上图楼房类图表icon样式
+.resourceTemplent__icon {
+  width: 70px;
+  height: 105px;
+  background: no-repeat url('@/assets/images/addressIcon/addressBorder.png');
+  background-size: 100% 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 15px 20px 15px;
+
+  &__img {
+    flex: 1;
+    overflow: hidden;
+
+    img {
+      object-fit: contain;
+      height: 100%;
+      width: 100%;
+    }
+  }
+
+  &__title {
+    margin-top: 4px;
+    font-size: 12px;
+  }
+
+  &__value {
+    font-size: 12px;
+  }
+}
+
+
+// 重点区域对应的倾斜摄影上方弹框信息
+
+.marsTiltPanel-wrap {
+  position: relative;
+  padding: 30px;
+  overflow: hidden;
+}
+
+.marsTiltPanel .area {
+  position: relative;
+  min-width: 180px;
+}
+
+.marsTiltPanel .b-t {
+  position: absolute;
+  top: 0;
+  left: 44px;
+  right: 0;
+  height: 1px;
+  z-index: 10;
+}
+
+.marsTiltPanel .b-r {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 44px;
+  width: 1px;
+  z-index: 10;
+}
+
+.marsTiltPanel .b-b {
+  position: absolute;
+  left: 0;
+  right: 44px;
+  bottom: 0;
+  height: 1px;
+  z-index: 10;
+}
+
+.marsTiltPanel .b-l {
+  position: absolute;
+  top: 44px;
+  left: 0;
+  bottom: 0;
+  width: 1px;
+  z-index: 10;
+}
+
+.marsTiltPanel .b-t-l {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 62px;
+  transform: rotate(45deg) translate(52px, -22px);
+  z-index: 10;
+}
+
+.marsTiltPanel .b-b-r {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 1px;
+  height: 62px;
+  transform: rotate(45deg) translate(-52px, 22px);
+  z-index: 10;
+}
+
+.marsTiltPanel .label-wrap {
+  padding-left: 12px;
+  color: #fff;
+  font-size: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.marsTiltPanel .title {
+  margin-top: 20px;
+  padding: 0 12px 0 30px;
+  height: 36px;
+  line-height: 36px;
+  position: relative;
+}
+
+.marsTiltPanel .title::before {
+  content: "";
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  height: 2px;
+}
+
+.marsTiltPanel .label-content {
+  pointer-events: auto;
+  padding: 10px 10px;
+  width: 240px;
+  height: 100px;
+  overflow-y: scroll;
+  word-break: break-word;
+  white-space: pre-line;
+}
+
+.marsTiltPanel .arrow {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 45px;
+  height: 2px;
+  transform: rotate(-45deg) translate(5px, -15px);
+}
+
+.marsTiltPanel-theme-blue .b-t,
+.marsTiltPanel-theme-blue .b-r,
+.marsTiltPanel-theme-blue .b-b,
+.marsTiltPanel-theme-blue .b-l,
+.marsTiltPanel-theme-blue .b-t-l,
+.marsTiltPanel-theme-blue .b-b-r {
+  background-color: #29baf1;
+  box-shadow: 0 0 10px 2px #29baf1;
+}
+
+.marsTiltPanel-theme-blue .area {
+  background-image: linear-gradient(135deg, transparent 30px, #28bbf06c 30px, #28bbf06c 50%, transparent 50%),
+    linear-gradient(-45deg, transparent 30px, #28bbf06c 30px, #28bbf06c 50.1%, transparent 50%);
+}
+
+.marsTiltPanel-theme-blue .title {
+  background-image: linear-gradient(135deg, transparent 25px, #29baf1 25px);
+}
+
+.marsTiltPanel-theme-blue .arrow,
+.marsTiltPanel-theme-blue .title::before {
+  background-color: #28bbf0;
+}
+
+/* 缁胯壊涓婚 */
+
+.marsTiltPanel-theme-green .b-t,
+.marsTiltPanel-theme-green .b-r,
+.marsTiltPanel-theme-green .b-b,
+.marsTiltPanel-theme-green .b-l,
+.marsTiltPanel-theme-green .b-t-l,
+.marsTiltPanel-theme-green .b-b-r {
+  background-color: #06e34a;
+  box-shadow: 0 0 10px 2px #06e34a;
+}
+
+.marsTiltPanel-theme-green .area {
+  background-image: linear-gradient(135deg, transparent 30px, #06e3486c 30px, #06e3486c 50%, transparent 50%),
+    linear-gradient(-45deg, transparent 30px, #06e3486c 30px, #06e3486c 50.01%, transparent 50%);
+}
+
+.marsTiltPanel-theme-green .title {
+  background-image: linear-gradient(135deg, transparent 25px, #06e34a 25px);
+}
+
+.marsTiltPanel-theme-green .arrow,
+.marsTiltPanel-theme-green .title::before {
+  background-color: #06e34a;
+}
+
+/* 绾㈣壊涓婚 */
+.marsTiltPanel-theme-red .b-t,
+.marsTiltPanel-theme-red .b-r,
+.marsTiltPanel-theme-red .b-b,
+.marsTiltPanel-theme-red .b-l,
+.marsTiltPanel-theme-red .b-t-l,
+.marsTiltPanel-theme-red .b-b-r {
+  background-color: #1296db;
+  box-shadow: 0 0 10px 2px #1296db;
+}
+
+.marsTiltPanel-theme-red .area {
+  background-image: linear-gradient(135deg, transparent 30px, #1296db6c 30px, #1296db6c 50%, transparent 50%),
+    linear-gradient(-45deg, transparent 30px, #1296db6c 30px, #1296db6c 50%, transparent 50%);
+}
+
+.marsTiltPanel-theme-red .title {
+  background-image: linear-gradient(135deg, transparent 25px, #1296db 25px);
+}
+
+.marsTiltPanel-theme-red .arrow,
+.marsTiltPanel-theme-red .title::before {
+  background-color: #1296db;
+}
+
+/* 榛勮壊涓婚 */
+
+.marsTiltPanel-theme-e9b709 .b-t,
+.marsTiltPanel-theme-e9b709 .b-r,
+.marsTiltPanel-theme-e9b709 .b-b,
+.marsTiltPanel-theme-e9b709 .b-l,
+.marsTiltPanel-theme-e9b709 .b-t-l,
+.marsTiltPanel-theme-e9b709 .b-b-r {
+  background-color: #e9b709;
+  box-shadow: 0 0 10px 2px #e9b709;
+}
+
+.marsTiltPanel-theme-e9b709 .area {
+  background-image: linear-gradient(135deg, transparent 30px, #e9b9096c 30px, #e9b9096c 50%, transparent 50%),
+    linear-gradient(-45deg, transparent 30px, #e9b9096c 30px, #e9b9096c 50%, transparent 50%);
+}
+
+.marsTiltPanel-theme-e9b709 .title {
+  background-image: linear-gradient(135deg, transparent 25px, #e9b709 25px);
+}
+
+.marsTiltPanel-theme-e9b709 .arrow,
+.marsTiltPanel-theme-e9b709 .title::before {
+  background-color: #e9b709;
+}
+
+
+
+// 表格
+.table_wrap {
+  margin-top: 16px;
+  border-radius: 4px;
+  opacity: 1;
+
+  background: #f9fcff;
+  .table_header {
+    height: 56px;
+    border: 1px solid #e8e8e8;
+    padding: 0 23px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    font-size: 16px;
+    line-height: 24px;
+    color: #000000;
+  }
+  .table_btn_wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 30px;
+  }
+  .table_btn_item {
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 22px;
+    color: #1f87e9;
+  }
+  .view_btn {
+    color: #1f87e9;
+  }
+  .delete_btn {
+    color: #f56c6c;
+  }
+  .table_content{
+    padding: 24px;
+  }
+  .table_footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 10px;
+  }
+}
+.tableHeaderClassName{
+  // background-image: url('@/assets/images/layout/table_header_bg.png') !important;
+  // background-size: 100% 100% !important;
+  // background-repeat: no-repeat !important;
+  // background-position: center !important;
+  color: #000000 !important;
+  font-size: 16px !important;
+}
+.el-table .even-row{
+  // background: #f0f9ff;
+  background: #f9fcff;
+}
+.el-table .odd-row{
+  // background: #ffffff;
+  background: #eff6ff;
+}
+.el-table th.el-table__cell {
+  background-image: url("@/assets/images/layout/table_header_bg.png") !important;
+  // background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  color: #303133;
+}
+.el-table--border {
+  border: 1px solid #ebeef5;
+}
+.el-pagination {
+  margin-top: 10px;
+  text-align: right;
+}
+
+
+
+:deep(.el-dialog) {
+  transform: translate(-512px, 39px);
+}
+
+
+.my-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: url("@/assets/images/layout/dialog_hd_bg2.png") no-repeat;
+  background-size: 100% 100% !important;
+  // background-position-x: -6px;
+  padding: 0 16px 0px 24px;
+  box-sizing: border-box;
+  height: 56px;
+  position: relative;
+  z-index: 100;
+
+  &__left {
+    display: flex;
+    align-items: center;
+  }
+}
+
+
+
+.modal_name {
+  display: none !important;
+}
+
+.el-dialog__body{
+    width: 100%;
+  background: url("@/assets/images/layout/dialog_content_bg.png") no-repeat;
+  background-size: cover;
+  cursor: pointer;
+  // padding: 47;
+  // transform: translate(0px, -24px);
+  // padding: 20px 16px !important;
+  box-sizing: border-box;
+  pointer-events: all;
+  backdrop-filter: blur(10px);
+}
+.el-dialog{
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.bottom_btn {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  .btn {
+    padding: 0 24px;
+    height: 28px;
+    border-radius: 2px;
+    font-size: 10px;
+    font-weight: normal;
+    line-height: 24px;
+    cursor: pointer;
+  }
+  .cancle {
+    background: linear-gradient(90deg, #ffffff 0%, #ebf4ff 100%),
+      linear-gradient(
+        180deg,
+        rgba(0, 21, 41, 0.4) 0%,
+        rgba(12, 34, 54, 0.4) 52%,
+        rgba(0, 47, 91, 0.4) 100%
+      );
+
+    box-sizing: border-box;
+    border: 1px solid #a0ceff;
+    color: #1f87e9;
+  }
+  .confirm {
+    background: linear-gradient(90deg, #6db0ff 0%, #60abff 100%),
+      linear-gradient(
+        180deg,
+        rgba(0, 21, 41, 0.4) 0%,
+        rgba(26, 71, 114, 0.4) 52%,
+        rgba(0, 47, 91, 0.4) 100%
+      );
+
+    box-sizing: border-box;
+    border: 1px solid #3796ff;
+    color: #ffffff;
+    margin-left: 12px;
+  }
+}
+
+/* =========================
+ * Gotham form typography
+ * 全局表单统一：IBM Plex Mono / 12px
+ * ========================= */
+.el-form,
+.el-form-item,
+.demo-form-inline,
+.station-config,
+.station-config__form,
+.login-modal,
+.login-modal__form,
+.custom-dialog-wrapper,
+.dark-dialog {
+  font-family: var(--font-mono) !important;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--form-font-size) !important;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+.el-form *,
+.el-form-item *,
+.demo-form-inline *,
+.station-config *,
+.station-config__form *,
+.login-modal *,
+.custom-dialog-wrapper *,
+.dark-dialog * {
+  font-family: var(--font-mono) !important;
+  font-size: var(--form-font-size) !important;
+  line-height: 1.45;
+}
+
+.el-form-item__label,
+.el-form-item__content,
+.el-form-item__error,
+.station-config__card-title,
+.station-config__title,
+.station-config__tab,
+.station-config__btn,
+.station-config__clear,
+.form_value,
+.tabs-header h3 {
+  font-family: var(--font-mono) !important;
+  font-size: var(--form-label-size) !important;
+}
+
+.el-input,
+.el-input__wrapper,
+.el-input__inner,
+.el-textarea__inner,
+.el-select,
+.el-select__wrapper,
+.el-select__selected-item,
+.el-select__placeholder,
+.el-select-dropdown,
+.el-select-dropdown__item,
+.el-radio-button__inner,
+.el-radio__label,
+.el-checkbox__label,
+.el-button,
+.el-switch__label {
+  font-family: var(--font-mono) !important;
+  font-size: var(--form-font-size) !important;
+}
+
+.el-input__inner,
+.el-textarea__inner,
+.el-select__selected-item,
+.el-select__placeholder {
+  font-size: var(--form-font-size) !important;
+}
+
+.el-form-item__label {
+  font-size: var(--form-label-size) !important;
+  color: var(--gotham-text-muted);
+}
+
+.el-form-item__error {
+  font-size: 11px !important;
+}
+
+.station-config__title,
+.login-modal__title {
+  font-size: 14px !important;
+  font-weight: 600;
+}
+
+.station-config__card-title {
+  font-size: 12px !important;
+  font-weight: 600;
+}
+
+.el-button,
+.station-config__btn,
+.station-config__tab,
+.station-config__clear,
+.login-modal__submit,
+.bottom_btn .btn {
+  font-size: 12px !important;
+}
+
+/* popper 下拉挂到 body，单独覆盖 — 全部 combobox / cascader / autocomplete */
+.el-select__popper,
+.el-select-dropdown,
+.el-popper.el-select__popper,
+.station-config-select-dropdown,
+.el-cascader__dropdown,
+.el-autocomplete-suggestion,
+.el-dropdown__popper,
+.el-popper.is-pure {
+  --el-font-size-base: 12px;
+  --el-select-font-size: 12px;
+  --el-font-family: 'IBM Plex Mono', 'Cascadia Mono', 'Noto Sans SC', monospace;
+  font-family: 'IBM Plex Mono', 'Cascadia Mono', 'Noto Sans SC', monospace !important;
+  font-size: 12px !important;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+body > .el-popper,
+body > .el-select__popper,
+body > .el-popper .el-select-dropdown,
+body > .el-popper .el-scrollbar,
+.el-select__popper .el-select-dropdown__item,
+.el-select-dropdown .el-select-dropdown__item,
+.station-config-select-dropdown .el-select-dropdown__item,
+.el-select-dropdown__item,
+.el-select-dropdown__item span,
+.el-cascader-node__label,
+.el-autocomplete-suggestion li,
+.el-dropdown-menu__item {
+  font-family: 'IBM Plex Mono', 'Cascadia Mono', 'Noto Sans SC', monospace !important;
+  font-size: 12px !important;
+  line-height: 1.45 !important;
+}
+
+.el-select-dropdown .el-select-dropdown__item,
+.el-select__popper .el-select-dropdown__item,
+.station-config-select-dropdown .el-select-dropdown__item {
+  height: auto !important;
+  min-height: 32px !important;
+  padding: 6px 12px !important;
+}
+
+/* MessageBox：对齐 Gotham 深色弹窗 */
+.el-overlay.is-message-box,
+.el-overlay .el-overlay-message-box {
+  background: rgba(6, 10, 18, 0.55) !important;
+}
+
+.el-message-box,
+.el-message-box.gotham-message-box {
+  --el-messagebox-width: 420px;
+  width: 420px;
+  max-width: calc(100vw - 48px);
+  padding: 20px 22px 18px;
+  background: rgba(26, 34, 44, 0.92) !important;
+  border: 1px solid rgba(180, 200, 220, 0.18) !important;
+  border-radius: 14px !important;
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(22px) saturate(1.15);
+  -webkit-backdrop-filter: blur(22px) saturate(1.15);
+  font-family: var(--font-mono, 'IBM Plex Mono', 'Noto Sans SC', monospace) !important;
+}
+
+.el-message-box__header {
+  padding: 0 0 14px;
+}
+
+.el-message-box__title {
+  color: #ffffff !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em;
+}
+
+.el-message-box__headerbtn {
+  top: 2px;
+  right: 0;
+}
+
+.el-message-box__headerbtn .el-message-box__close {
+  color: rgba(210, 220, 230, 0.75) !important;
+}
+
+.el-message-box__headerbtn:hover .el-message-box__close {
+  color: #ffffff !important;
+}
+
+.el-message-box__content {
+  padding: 8px 0 6px;
+  color: rgba(235, 240, 245, 0.88) !important;
+  font-size: 13px !important;
+}
+
+.el-message-box__message {
+  color: rgba(235, 240, 245, 0.88) !important;
+  font-size: 13px !important;
+}
+
+.el-message-box__status {
+  color: #e8b52a !important;
+}
+
+.el-message-box__btns {
+  padding: 16px 0 0;
+  gap: 10px;
+}
+
+.el-message-box__btns .el-button {
+  min-width: 72px;
+  height: 34px;
+  margin: 0 !important;
+  border-radius: 10px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  font-family: inherit !important;
+}
+
+.el-message-box__btns .el-button--default {
+  background: rgba(18, 24, 31, 0.7) !important;
+  border: 1px solid rgba(180, 200, 220, 0.22) !important;
+  color: rgba(235, 240, 245, 0.9) !important;
+}
+
+.el-message-box__btns .el-button--default:hover {
+  border-color: rgba(0, 162, 255, 0.45) !important;
+  color: #ffffff !important;
+}
+
+.el-message-box__btns .el-button--primary {
+  background: linear-gradient(90deg, #00a2ff 0%, #3b82f6 100%) !important;
+  border: none !important;
+  color: #ffffff !important;
+}
+
+.el-message-box__btns .el-button--primary:hover {
+  filter: brightness(1.08);
+}

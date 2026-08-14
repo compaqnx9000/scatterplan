@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>悬浮球与功能轮盘整体交互</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background-color: #f5f5f5;
+      position: relative;
+    }
+
+    /* 整体容器 - 用于判断鼠标是否在整体范围内 */
+    .floating-container {
+      position: fixed;
+      z-index: 9999;
+    }
+
+    /* 悬浮球样式 */
+    .floating-ball {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background-color: #409eff;
+      box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
+      color: #fff;
+      font-size: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: grab;
+      transition: all 0.3s ease;
+      position: relative;
+      z-index: 2;
+    }
+
+    .floating-ball:active {
+      cursor: grabbing;
+    }
+
+    /* 功能轮盘容器样式 */
+    .menu {
+      position: absolute;
+      opacity: 0;
+      transform: scale(0);
+      transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+      pointer-events: none;
+      z-index: 1;
+      display: flex;
+      gap: 12px;
+    }
+
+    /* 功能项通用样式 */
+    .menu-item {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background-color: #fff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #409eff;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      transform: scale(0);
+    }
+
+    .menu-item i {
+      font-size: 20px;
+    }
+
+    .menu-item:hover {
+      background-color: #409eff;
+      color: #fff;
+    }
+  </style>
+  <!-- 引入字体图标 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+<body>
+  <!-- 整体容器 - 悬浮球和功能轮盘作为一个整体 -->
+  <div class="floating-container" id="floatingContainer">
+    <!-- 悬浮球 -->
+    <div class="floating-ball" id="floatingBall">
+      <i class="fa fa-bars"></i>
+    </div>
+
+    <!-- 功能轮盘 -->
+    <div class="menu" id="menu">
+      <div class="menu-item" data-tip="主页">
+        <i class="fa fa-home"></i>
+      </div>
+      <div class="menu-item" data-tip="搜索">
+        <i class="fa fa-search"></i>
+      </div>
+      <div class="menu-item" data-tip="设置">
+        <i class="fa fa-cog"></i>
+      </div>
+      <div class="menu-item" data-tip="个人">
+        <i class="fa fa-user"></i>
+      </div>
+      <div class="menu-item" data-tip="通知">
+        <i class="fa fa-bell"></i>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const floatingContainer = document.getElementById('floatingContainer');
+    const floatingBall = document.getElementById('floatingBall');
+    const menu = document.getElementById('menu');
+    const menuItems = document.querySelectorAll('.menu-item');
+
+    let isDragging = false;
+    let startX = 0, startY = 0;
+    let containerX = window.innerWidth - 56 - 20; // 初始右侧位置
+    let containerY = window.innerHeight / 2 - 28;
+    let isLeftSide = false; // 是否在左侧
+    let isMenuShow = false;
+    let leaveTimer = null;
+
+    // 初始化位置（右侧）
+    floatingContainer.style.left = `${containerX}px`;
+    floatingContainer.style.top = `${containerY}px`;
+
+    // 拖动功能
+    floatingBall.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      // 计算鼠标在容器内的偏移
+      const rect = floatingContainer.getBoundingClientRect();
+      startX = e.clientX - rect.left;
+      startY = e.clientY - rect.top;
+      floatingBall.style.transition = 'none';
+      hideMenu(); // 拖动时隐藏菜单
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (isDragging) {
+        // 计算新位置
+        containerX = e.clientX - startX;
+        containerY = e.clientY - startY;
+        
+        // 限制在窗口内
+        containerX = Math.max(20, Math.min(window.innerWidth - 56 - 20, containerX));
+        containerY = Math.max(20, Math.min(window.innerHeight - 56 - 20, containerY));
+        
+        // 更新容器位置
+        floatingContainer.style.left = `${containerX}px`;
+        floatingContainer.style.top = `${containerY}px`;
+      }
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (isDragging) {
+        isDragging = false;
+        floatingBall.style.transition = 'all 0.3s ease';
+        autoStick();
+      }
+    });
+
+    // 自动贴边逻辑
+    function autoStick() {
+      const windowCenter = window.innerWidth / 2;
+      isLeftSide = containerX < windowCenter;
+      
+      if (isLeftSide) {
+        // 贴左侧
+        floatingContainer.style.left = '20px';
+      } else {
+        // 贴右侧
+        floatingContainer.style.left = `${window.innerWidth - 56 - 20}px`;
+      }
+      containerX = parseInt(floatingContainer.style.left);
+    }
+
+    // 整体容器鼠标事件 - 作为整体判断
+    floatingContainer.addEventListener('mouseenter', () => {
+      clearTimeout(leaveTimer);
+      showMenu();
+    });
+
+    floatingContainer.addEventListener('mouseleave', () => {
+      // 只有完全离开整体容器时才隐藏
+      leaveTimer = setTimeout(hideMenu, 300);
+    });
+
+    // 显示轮盘
+    function showMenu() {
+      if (isMenuShow) return;
+      isMenuShow = true;
+      
+      // 根据位置设置轮盘方向
+      if (isLeftSide) {
+        // 左侧 -> 轮盘显示在悬浮球右侧
+        menu.style.left = '66px'; // 悬浮球宽度(56px) + 间距(10px)
+        menu.style.top = '4px';
+      } else {
+        // 右侧 -> 轮盘显示在悬浮球左侧
+        menu.style.left = '-299px'; // -(5个功能项宽度(48*5) + 间距(12*4) + 间距(10px))
+        menu.style.top = '4px';
+      }
+
+      // 显示轮盘
+      menu.style.opacity = '1';
+      menu.style.transform = 'scale(1)';
+      menu.style.pointerEvents = 'auto'; // 允许交互
+      
+      // 逐个展开菜单项
+      menuItems.forEach((item, index) => {
+        setTimeout(() => {
+          item.style.transform = 'scale(1)';
+        }, index * 50);
+      });
+    }
+
+    // 隐藏轮盘
+    function hideMenu() {
+      if (!isMenuShow) return;
+      isMenuShow = false;
+      
+      // 隐藏菜单项
+      menuItems.forEach(item => {
+        item.style.transform = 'scale(0)';
+      });
+      
+      // 隐藏轮盘容器
+      menu.style.opacity = '0';
+      menu.style.transform = 'scale(0)';
+      menu.style.pointerEvents = 'none'; // 禁止交互
+    }
+
+    // 窗口变化适配
+    window.addEventListener('resize', () => {
+      autoStick();
+      if (isMenuShow) {
+        // 重新计算位置
+        if (isLeftSide) {
+          menu.style.left = '66px';
+        } else {
+          menu.style.left = '-274px';
+        }
+      }
+    });
+
+    // 功能项点击事件
+    menuItems.forEach((item, index) => {
+      item.addEventListener('click', () => {
+        alert(`点击了功能${index + 1}`);
+        hideMenu();
+      });
+    });
+  </script>
+</body>
+</html>
+    

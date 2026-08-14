@@ -1,0 +1,221 @@
+/**
+ * 配置路由相关信息
+ *  配置完成后需要在 main.js 中进行挂载
+ */
+
+import { nextTick } from "vue";
+import { createRouter, createWebHistory } from "vue-router";
+
+//直接加载页面
+import page1 from "../page/page1.vue"
+import navbar from "../components/navbar.vue"
+
+//当页面需要传参且被多个路由同时使用时，可以将参数进行耦合
+const page3 = {
+    props: ['参数1', '参数2'],
+    template: () =>
+        import ("../page/page3.vue")
+}
+
+// vue-router4 路由匹配规则：https://next.router.vuejs.org/zh/guide/essentials/route-matching-syntax.html
+const routes = [{
+    path: "/page1", //可以在获取路由参数时判断当前是哪个页面
+    name: "page1", //目前知道可以在路由重定向时使用
+    components: {
+        main: page1,
+        navbar: navbar,
+    },
+    alias: "/aaa", //路由别名，即两个路由指向同一个页面
+    meta: { //路由元信息，可以在 守卫的 to from 参数中获取
+        name: "页面1" //这里可以随意配置
+    },
+    /**
+     * 路由独享守卫
+     *      只会在 路由 被改变时触发，params、query 或 hash 被改变时 不触发
+     *      用法与全局 前置守卫 一致 
+     */
+    beforeEnter: (to, from, next) => {
+        console.log(to, from);
+        next()
+            // return false
+        return { path: to.path, query: to.path, hash: to.hash }
+    },
+
+    //用法 2 可以将方法进行抽离
+    // beforeEnter:[(to,from)=>{
+    //     // console.log(to,from);
+
+    //     if (Object.keys(to.query).length)
+    //         //必须 return info 为下一个方法的 to 参数
+    //         return { path: to.path, query: {}, hash: to.hash }
+    // },(to,from)=>{
+    //     // console.log(to,from);
+
+    //     //必须 return 参数 给导航，否则不会跳转
+    //     if (to.hash) return { path: to.path, query: to.query, hash: '' }
+    // }]
+
+}, {
+    //完全匹配
+    path: "/page2",
+    name: "page2",
+
+    //匹配 page2/任意单个路径       这个路径不能为空
+    // path: "/page2/:id",
+
+    //匹配 page2/任意数字           括号内可以是属性的正则匹配
+    // path: "/page2/:id(\\d)",
+
+    //匹配 page2/任意多个路径       至少要有一个
+    // path: "/page2/:id+",
+
+
+    //匹配 page2/任意个数路径       也可以没有
+    // path: "/page2/:id*",
+
+    //匹配 page2/任意路径       可以有一个也可以没有
+    // path: "/page2/:id?",
+
+    //懒加载页面
+    components: {
+        main: () =>
+            import ("../page/page2.vue"),
+        navbar: navbar,
+    },
+    children: [{
+        path: "page2son",
+        component: () =>
+            import ("../page/page2/page2son.vue")
+    }]
+}, {
+    path: "/page3",
+    name: "page3",
+    components: {
+        main: () =>
+            import ("../page/page3.vue"),
+        navbar: navbar,
+    },
+    children: [{
+        path: "page3son",
+        name: "page3son",
+        components: {
+            default: () =>
+                import ("../page/page3/page3son.vue"),
+            leftNavbar: () =>
+                import ("../page/page3/page3son1.vue"),
+            rightInfo: () =>
+                import ("../page/page3/page3son2.vue")
+        },
+        // props:{
+        //     //用于配置开启某个视图的参数
+        //     default:false,
+        //     leftNavbar:true,
+        //     rightInfo:true,
+        // }
+    }]
+}, {
+    path: "/",
+    // path:"/page*",    可以匹配 page 开头的任意路径
+    // component:page1
+
+    //路由重定向 重定向到某个路径
+    redirect: "/page1"
+
+    //路由重定向 重定向到某个名称
+    // redirect:{
+    //     name:"page1"
+    // },
+
+    //路由重定向 可以以方法形式进行修改
+    // redirect:to=>{
+    //     console.log(to);
+    //     return{
+    //         path:"page1"
+    //     }
+    // }
+}];
+
+const router = createRouter({
+    //用于配置路由映射方式
+    history: createWebHistory(),
+    //用于配置路径和组件之间的映射关系
+    routes: routes
+});
+
+let c = 0
+
+//全局 前置守卫
+router.beforeEach((to, from, next) => {
+    /**
+     * from     由哪里来
+     * to       到哪里去
+     * next     可选参数，用于确认是否进行导航  (一旦有这个参数就必须执行 next() 方法，因为它会阻塞执行)
+     */
+    console.log(to, from);
+    // if(c == 0){     //这里可以直接使用 await 异步判断是否登录过
+    //     c++
+    /**
+     * 1.这里一定要加判断，因为它是进行的重定向，所以会一直走这里，如果一直添加新路径则会造成死循环
+     * 2.next()参数：
+     *      
+     */
+    // next({name:"page2"})
+    // 也可以进行页面跳转
+    // router.push("/page3")
+
+    //用于抛出一个异常
+    // next(error)
+    // }else{
+    next()
+        // }
+
+    // return true     //是否继续导航   默认值：true  只有 false 时是取消，其他任意情况都是继续
+})
+
+
+// 全局 解析守卫
+/**
+ * 所有参数均和前置导航守卫一样的用法
+ */
+router.beforeResolve((to, from, next) => {
+
+    next()
+
+    // return false
+})
+
+
+// 全局 后置钩子 函数
+router.afterEach((to, from, failure) => {
+    // 不接受 next 函数，也不会改变导航本身
+    // console.log(to,from,failure)
+    // failure 参数也在 导航故障 处使用
+
+    //文档上有这个东西，但没写有什么用，也没测出来有什么用，可能是将某些信息发送到 导航故障 接收处，纯属猜测
+    // sendToAnalytics(to.fullPath)
+})
+
+// 全局 导航异常 函数
+router.onError((res) => {
+    console.log(res, '获取的导航上的异常');
+})
+
+
+/**
+ * 完整导航解析流程
+ * 
+ *  导航被触发
+ *  在失活的组件里调用 beforeRouteLeave 守卫。
+ *  调用全局的 beforeEach 守卫。
+ *  在重用的组件里调用 beforeRouteUpdate 守卫(2.2+)。
+ *  在路由配置里调用 beforeEnter。
+ *  解析异步路由组件。
+ *  在被激活的组件里调用 beforeRouteEnter。 (在 vue-router 4 版本中 没有见到)
+ *  调用全局的 beforeResolve 守卫(2.5+)。
+ *  导航被确认。
+ *  调用全局的 afterEach 钩子。
+ *  触发 DOM 更新。
+ *  调用 beforeRouteEnter 守卫中传给 next 的回调函数，创建好的组件实例会作为回调函数的参数传入。
+ */
+
+export default router;

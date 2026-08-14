@@ -1,0 +1,30 @@
+// 全局颜色变量
+
+/* 行为相关颜色 */
+
+$color-primary: #00B8D4; //主色调
+$color-success: #14DD7A; //成功
+$color-warning: #f0ad4e; //警告
+$color-error: #dd524d; //失败
+
+/* 文字基本颜色 */
+
+$text-color: #333; //基本色
+$text-color-inverse: #fff; //反色
+$text-color-grey: #999; //辅助灰色，如加载更多的提示信息
+
+/* 背景颜色 */
+
+$bg-color: #ffffff;
+$bg-color-grey: #f8f8f8;
+$bg-color-mask: rgba(0, 0, 0, 0.4); //遮罩颜色
+
+/* 边框颜色 */
+
+$border-color: #c8c7cc;
+
+/* 间距 */
+
+$spacing-col: 16px; //垂直间距
+$spacing-row: 16px; //水平间距
+

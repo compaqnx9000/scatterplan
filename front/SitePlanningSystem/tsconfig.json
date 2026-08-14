@@ -1,0 +1,53 @@
+{
+    "compilerOptions": {
+        "suppressImplicitAnyIndexErrors": true,
+        "target": "ESNext",
+        "useDefineForClassFields": true,
+        "module": "ESNext",
+        "moduleResolution": "Node",
+        "strict": true,
+        "jsx": "preserve",
+        "jsxFactory": "h",
+        "jsxImportSource": "vue",
+        "jsxFragmentFactory": "Fragment",
+        "sourceMap": true,
+        "resolveJsonModule": true,
+        "allowSyntheticDefaultImports": true,
+        "isolatedModules": true,
+        "esModuleInterop": true,
+        "lib": [
+            "ESNext",
+            "DOM"
+        ],
+        "skipLibCheck": true,
+        "baseUrl": ".",
+        "paths": { //用于配置别名
+            "@/*": [
+                "src/*" //对 src 目录有效
+            ]
+        },
+        "types": [ //用于配置换环境变量
+            "@vue/runtime-core",
+            "vite/client",
+            "node",
+        ],
+    },
+    // 配置需要校验的文件
+    "include": [
+        "src/**/*.ts",
+        "src/**/*.d.ts",
+        "src/**/*.tsx",
+        "src/**/*.vue",
+        "src/**/*.kml",
+        // "src/view/home/baseTwin/baseComponentsUtil/components.js",
+    ],
+    // 排除不需要 TypeScript 校验的文件
+    "exclude": [
+        "node_modules",
+    ],
+    "references": [
+        {
+            "path": "./tsconfig.node.json"
+        }
+    ]
+}
