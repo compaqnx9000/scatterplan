@@ -344,6 +344,23 @@ onBeforeUnmount(() => {
   :deep(.el-input__inner) {
     color: #ffffff !important;
     font-size: 12px !important;
+
+    &::placeholder {
+      color: rgba(210, 220, 230, 0.72) !important;
+      -webkit-text-fill-color: rgba(210, 220, 230, 0.72) !important;
+      opacity: 1 !important;
+    }
+  }
+
+  :deep(.el-input__inner::-webkit-input-placeholder) {
+    color: rgba(210, 220, 230, 0.72) !important;
+    -webkit-text-fill-color: rgba(210, 220, 230, 0.72) !important;
+    opacity: 1 !important;
+  }
+
+  :deep(input::placeholder) {
+    color: rgba(210, 220, 230, 0.72) !important;
+    opacity: 1 !important;
   }
 }
 

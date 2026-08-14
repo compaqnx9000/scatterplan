@@ -426,11 +426,13 @@ class ColorSetting(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # 清洗路径（去掉 media/ 前缀）
+            # 清洗路径（去掉 media/ 前缀和缓存参数）
             if 'media/' in tif_path:
                 tif_path = tif_path.split('media/', 1)[-1]
+            tif_path = tif_path.split('?')[0]
             if 'media/' in png_path:
-                png_path = png_path.split('media/')[-1].split('?')[0]
+                png_path = png_path.split('media/')[-1]
+            png_path = png_path.split('?')[0]
 
             # 拼接绝对路径
             abs_tif_path = path.join(settings.MEDIA_ROOT, tif_path)

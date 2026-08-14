@@ -266,18 +266,18 @@ export class main {
     // 在组件中导入
     const token = localStorage.getItem("userToken");
 
-    const response = await fetch("/Config/config.json"); // 根路径直接访问
+    const response = await fetch(`${import.meta.env.BASE_URL}Config/config.json`); // 跟随 Vite base
     if (!response.ok) throw new Error("配置文件加载失败");
     const config = await response.json();
+    const wsProto = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl =
+      config.VITE_APP_WS_url ||
+      `${wsProto}//${window.location.host}${import.meta.env.BASE_URL}wslink/`;
     console.log("public 配置变量：", config);
-    // 在setup中使用
-    console.log(
-      "长连接地址",
-      config.VITE_APP_WS_url + "?token=" + token
-    );
+    console.log("长连接地址", wsUrl + "?token=" + token);
 
     this.wsService = useWebSocket({
-      url: config.VITE_APP_WS_url + "?token=" + token,
+      url: wsUrl + "?token=" + token,
       heartbeatInterval: 30000, // 30秒一次心跳
       reconnectInterval: 3000, // 3秒后尝试重连
       maxReconnectAttempts: Infinity,

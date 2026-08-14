@@ -651,30 +651,28 @@ export default class CommunicationAreaService {
    */
   setCircleAreaImg(data: any) {
     console.log("setCircleAreaImg", data);
-
+    const existing: any[] = [];
     this.graphicLayer.eachGraphic((graphicItem) => {
-      if (graphicItem && graphicItem.name === "round") {
-        console.log("graphicItem", graphicItem.toJSON());
-        this.graphicLayer.removeGraphic(graphicItem);
-
-        const graphic = new mars3d.graphic.CirclePrimitive({
-          name: "round",
-          position: new mars3d.LngLatPoint(
-            data.centerPoint[0],
-            data.centerPoint[1],
-            700,
-          ),
-          style: {
-            radius: data.radius * 1000,
-            opacity: 0.6,
-            image: data.png_image_url,
-            clampToGround: true,
-          },
-          attr: { remark: "示例2" },
-        });
-        this.graphicLayer.addGraphic(graphic);
-      }
+      if (graphicItem?.name === "round") existing.push(graphicItem);
     });
+    existing.forEach((graphicItem) => this.graphicLayer.removeGraphic(graphicItem));
+    if (!data?.centerPoint || data.radius == null || !data.png_image_url) return;
+    const graphic = new mars3d.graphic.CirclePrimitive({
+      name: "round",
+      position: new mars3d.LngLatPoint(
+        data.centerPoint[0],
+        data.centerPoint[1],
+        700,
+      ),
+      style: {
+        radius: data.radius * 1000,
+        opacity: 0.6,
+        image: data.png_image_url,
+        clampToGround: true,
+      },
+      attr: { remark: "示例2" },
+    });
+    this.graphicLayer.addGraphic(graphic);
   }
 
   /**
@@ -683,12 +681,12 @@ export default class CommunicationAreaService {
    */
   setRectangleAreaImg(data: any) {
     console.log("setRectangleAreaImg", data);
+    const existing: any[] = [];
     this.graphicLayer.eachGraphic((graphicItem) => {
-      if (graphicItem.name === "Rectangle") {
-        this.graphicLayer.removeGraphic(graphicItem);
-        this.addRectanglePrimitive(data);
-      }
+      if (graphicItem?.name === "Rectangle") existing.push(graphicItem);
     });
+    existing.forEach((graphicItem) => this.graphicLayer.removeGraphic(graphicItem));
+    this.addRectanglePrimitive(data);
   }
   /**
    * 添加聚类点
@@ -837,30 +835,19 @@ export default class CommunicationAreaService {
    */
   setAreaPng(data: any) {
     console.log("setAreaPng", data);
-    if (data.type === "Rectangle") {
-      //   this.setRectangleAreaImg(data);
-      this.graphicLayer.eachGraphic((graphicItem) => {
-        if (graphicItem.name === "Rectangle") {
-          console.log("graphicItem", graphicItem.toJSON());
-
-          graphicItem.setOptions({
-            style: {
-              image: data.tif_image_url,
-            },
-          });
-        }
+    const imageUrl = data.png_image_url || data.tif_image_url;
+    const isCircle = data.type === "round" || data.type === "Round";
+    if (isCircle) {
+      this.setCircleAreaImg({
+        ...data,
+        png_image_url: imageUrl,
       });
-    } else if (data.type === "round") {
-      this.graphicLayer.eachGraphic((graphicItem) => {
-        if (graphicItem.name === "round") {
-          graphicItem.setOptions({
-            style: {
-              image: data.tif_image_url,
-            },
-          });
-        }
-      });
+      return;
     }
+    this.setRectangleAreaImg({
+      ...data,
+      png_image_url: imageUrl,
+    });
   }
 
   /**
@@ -869,6 +856,7 @@ export default class CommunicationAreaService {
    */
   addRectanglePrimitive(data: any) {
     console.log("addRectanglePrimitive", data);
+    if (!data?.initialPoint || !data?.destinationPoint || !data.png_image_url) return;
     const graphic = new mars3d.graphic.RectanglePrimitive({
       name: "Rectangle",
       positions: [

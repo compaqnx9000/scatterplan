@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 
-const routerHistory = createWebHistory();
+const routerHistory = createWebHistory(import.meta.env.BASE_URL);
 import Layout from "@/view/layout/index.vue";
 // createWebHistory history 路由
 // createMemoryHistory 带缓存 history 路由

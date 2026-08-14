@@ -9,7 +9,7 @@
       <div class="loss-config__panel">
         <div class="loss-config__header" @mousedown="startDrag">
           <div class="loss-config__title">传输损耗配置</div>
-          <button class="loss-config__close" type="button" title="关闭" @click="setVisible(false)" @mousedown.stop>
+          <button class="loss-config__close" type="button" title="关闭" @click="handleCancel" @mousedown.stop>
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path
                 d="M6.4 6.4 17.6 17.6M17.6 6.4 6.4 17.6"
@@ -104,7 +104,7 @@
 
         <div class="loss-config__footer">
           <div class="loss-config__footer-left">
-            <button class="loss-config__btn loss-config__btn--ghost" type="button" @click="setVisible(false)">
+            <button class="loss-config__btn loss-config__btn--ghost" type="button" @click="handleCancel">
               取消
             </button>
           </div>
@@ -164,7 +164,6 @@ const emit = defineEmits([
   "confirm",
   "screenshot",
   "toggleLossMap",
-  "selectPalette",
 ]);
 
 const panelRef = ref<HTMLElement | null>(null);
@@ -223,11 +222,19 @@ const selectRibbon = (index: number) => {
   draftRadio.value = index;
 };
 
+const handleCancel = () => {
+  setVisible(false);
+};
+
 const handleConfirm = () => {
   emit("update:radio", draftRadio.value);
   emit("update:thresholdStart", draftThresholdStart.value);
   emit("update:thresholdEnd", draftThresholdEnd.value);
-  emit("confirm");
+  emit("confirm", {
+    radio: draftRadio.value,
+    thresholdStart: draftThresholdStart.value,
+    thresholdEnd: draftThresholdEnd.value,
+  });
 };
 
 const syncDrafts = () => {
@@ -472,17 +479,26 @@ onBeforeUnmount(() => {
     flex-direction: column;
     gap: 2px;
 
+    scrollbar-width: thin;
+    scrollbar-color: rgba(90, 96, 104, 0.95) rgba(18, 22, 28, 0.9);
+
     &::-webkit-scrollbar {
       width: 8px;
     }
 
     &::-webkit-scrollbar-track {
-      background: rgba(255, 255, 255, 0.06);
+      background: rgba(18, 22, 28, 0.9);
+      border-radius: 8px;
     }
 
     &::-webkit-scrollbar-thumb {
-      background: rgba(0, 162, 255, 0.55);
+      background: rgba(72, 78, 86, 0.95);
       border-radius: 8px;
+      border: 1px solid rgba(0, 0, 0, 0.35);
+
+      &:hover {
+        background: rgba(96, 102, 110, 0.98);
+      }
     }
   }
 

@@ -16,6 +16,7 @@ export default defineConfig(({ mode }) => {
         include: /node_modules|packages/,
       },
     },
+    base: mode === "production" ? "/scatter/" : "/",
     plugins: [
       vue(),
       mars3dPlugin(),

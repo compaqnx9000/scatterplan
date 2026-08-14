@@ -1653,6 +1653,7 @@ const updateCircleAreaImg = (message: any) => {
   if (!isActiveTaskMessage(message.task_id)) return;
   console.log("circleArea", message.png_image_url);
   circleArea_tif_image_url.value = message.tif_image_url;
+  circleArea_tif_url.value = message.tif_image_url;
   message.png_image_url = message.png_image_url + '?t=' + new Date().getTime();
   circleArea_image_url.value = message.png_image_url;
   circleArea_tif_id.value = message.id;
@@ -1979,56 +1980,116 @@ const predefineColors = [
 ];
 
 
-// 颜色配置
+const stripUrlQuery = (url = "") => String(url || "").split("?")[0];
+
+const isCircleCoverage = () =>
+  CommunicationArea.activeName === "Round" || CommunicationArea.activeName === "round";
+
+const getLossOverlayRef = () => {
+  const circle = {
+    isCircle: true,
+    id: circleArea_tif_id.value,
+    pngPath: circleArea_image_url.value,
+    tifPath: circleArea_tif_url.value || circleArea_tif_image_url.value,
+  };
+  const rectangle = {
+    isCircle: false,
+    id: rectangleArea_tif_id.value,
+    pngPath: rectangleArea_image_url.value,
+    tifPath: rectangleArea_tif_url.value,
+  };
+  const preferred = isCircleCoverage() ? circle : rectangle;
+  const fallback = isCircleCoverage() ? rectangle : circle;
+  if (preferred.id && preferred.pngPath && preferred.tifPath) return preferred;
+  if (fallback.id && fallback.pngPath && fallback.tifPath) return fallback;
+  return preferred;
+};
+
+const recolorLossOverlay = async (colors: string[], minVal: number, maxVal: number) => {
+  const overlay = getLossOverlayRef();
+  const pngPath = stripUrlQuery(overlay.pngPath);
+  const tifPath = stripUrlQuery(overlay.tifPath);
+  if (!overlay.id || !pngPath || !tifPath || !colors?.length) {
+    return false;
+  }
+
+  await setColorGenerateImage({
+    id: overlay.id,
+    png_path: pngPath,
+    tif_path: tifPath,
+    colors,
+    min_val: minVal,
+    max_val: maxVal,
+  });
+
+  const displayUrl = `${pngPath}?t=${Date.now()}`;
+  if (overlay.isCircle) {
+    circleArea_image_url.value = displayUrl;
+  } else {
+    rectangleArea_image_url.value = displayUrl;
+  }
+
+  $bus.emit("setAreaPng", {
+    png_image_url: displayUrl,
+    tif_image_url: displayUrl,
+    type: overlay.isCircle ? "round" : "Rectangle",
+    initialPoint: [CommunicationArea.initialPointLng, CommunicationArea.initialPointLat],
+    destinationPoint: [CommunicationArea.destinationPointLng, CommunicationArea.destinationPointLat],
+    centerPoint: [CommunicationArea.centerPointLng, CommunicationArea.centerPointLat],
+    radius: CommunicationArea.radius,
+  });
+  lossMapVisible.value = true;
+  return true;
+};
+
+// 颜色配置：点选只改对话框预览，确认后才更新图例并重着色地图
 const applyColorBarToMap = async (closeDialog = true) => {
-  // 直接从 radio1 取色，避免 confirm 时 selectedColorBar 仍是上一帧（watch 滞后）
   const palette = colorBarList[radio1.value]?.colors;
+  const colors = palette?.length
+    ? palette.map((item) => item.color)
+    : selectedColorBar.value.map((item) => item.color);
+  const minVal = Number(threshold_start.value);
+  const maxVal = Number(threshold_end.value);
+
   if (palette?.length) {
     selectedColorBar.value = [...palette];
   }
 
-  localStorage.setItem("threshold_start", JSON.stringify(threshold_start.value));
-  localStorage.setItem("threshold_end", JSON.stringify(threshold_end.value));
+  localStorage.setItem("threshold_start", JSON.stringify(minVal));
+  localStorage.setItem("threshold_end", JSON.stringify(maxVal));
   localStorage.setItem("radio1", JSON.stringify(radio1.value));
-
-  const id = rectangleArea_tif_id.value || circleArea_tif_id.value;
-  const pngPath = CommunicationArea.activeName === "Rectangle" ? rectangleArea_image_url.value : circleArea_image_url.value;
-  const tifPath = CommunicationArea.activeName === "Rectangle" ? rectangleArea_tif_url.value : circleArea_tif_url.value;
-  if (!id || !pngPath || !tifPath || !selectedColorBar.value?.length) {
-    if (closeDialog) showColorBarConfigurationDialog.value = false;
-    return;
-  }
 
   btnloading.value = true;
   try {
-    await setColorGenerateImage({
-      id,
-      png_path: pngPath,
-      tif_path: tifPath,
-      colors: selectedColorBar.value.map(item => item.color),
-      min_val: threshold_start.value,
-      max_val: threshold_end.value,
-    });
-
-    $bus.emit("setAreaPng", {
-      tif_image_url: pngPath + "?time=" + new Date().getTime(),
-      type: CommunicationArea.activeName,
-    });
+    const ok = await recolorLossOverlay(colors, minVal, maxVal);
+    if (!ok) {
+      ElMessage.warning("请先完成传输损耗预测");
+    }
   } catch (error) {
     console.log(error);
+    ElMessage.error("损耗图着色失败，请稍后重试");
+    btnloading.value = false;
+    return;
   }
   btnloading.value = false;
   if (closeDialog) showColorBarConfigurationDialog.value = false;
 };
 
-const handleColorBarConfiguration = async () => {
+const handleColorBarConfiguration = async (payload?: {
+  radio?: number;
+  thresholdStart?: number | string;
+  thresholdEnd?: number | string;
+}) => {
+  if (payload && payload.radio != null) {
+    radio1.value = Number(payload.radio);
+  }
+  if (payload && payload.thresholdStart != null) {
+    threshold_start.value = Number(payload.thresholdStart);
+  }
+  if (payload && payload.thresholdEnd != null) {
+    threshold_end.value = Number(payload.thresholdEnd);
+  }
   await applyColorBarToMap(true);
-};
-
-const handleSelectPalette = (index: number) => {
-  radio1.value = index;
-  selectedColorBar.value = [...colorBarList[index].colors];
-  applyColorBarToMap(false);
 };
 
 

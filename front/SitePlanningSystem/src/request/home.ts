@@ -78,6 +78,7 @@ export function exportExcel(data: { id: number; cluster_stats: number }) {
 
 // 设置颜色重新生成图像
 export function setColorGenerateImage(data: {
+  id: number | string;
   tif_path: string;
   png_path: string;
   colors: Array<string>;

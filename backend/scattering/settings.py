@@ -21,8 +21,26 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
 
-# 确保 PROJ 数据路径也设置了
-os.environ["PROJ_LIB"] = r"./venv/Lib/site-packages/rasterio/proj_data"
+def _resolve_proj_lib():
+    candidates = [
+        BASE_DIR / "venv" / "Lib" / "site-packages" / "rasterio" / "proj_data",
+        BASE_DIR / ".venv" / "lib" / f"python{os.sys.version_info.major}.{os.sys.version_info.minor}" / "site-packages" / "rasterio" / "proj_data",
+    ]
+    for cand in candidates:
+        if cand.exists():
+            return str(cand)
+    try:
+        import rasterio
+        cand = Path(rasterio.__file__).resolve().parent / "proj_data"
+        if cand.exists():
+            return str(cand)
+    except Exception:
+        pass
+    return ""
+
+_proj_lib = _resolve_proj_lib()
+if _proj_lib:
+    os.environ["PROJ_LIB"] = _proj_lib
 
 
 # Quick-start development settings - unsuitable for production

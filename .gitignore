@@ -52,4 +52,6 @@ backend/.mypy_cache/
 backend/.pytest_cache/
 backend/.coverage
 backend/current_env.txt
-backend/test.json
+# Deploy helper scripts with host credentials (local only)
+scripts/_*
+scripts/__pycache__/

@@ -40,15 +40,19 @@ def convert_tif_to_image(
 
     # 读取tif文件
     with rasterio.open(input_tif_path) as src:
-        data = src.read(1)
+        data = src.read(1).astype(np.float32)
         nodata = src.nodata
+
+    span = float(max_val) - float(min_val)
+    if span <= 0:
+        span = 1.0
 
     # 剪裁数据到[min_val, max_val]
     data_clipped = np.clip(data, min_val, max_val)
 
     # 归一化到[0,1]
-    norm_data = (data_clipped - min_val) / (max_val - min_val)
-    norm_data = norm_data.astype(np.float32)
+    norm_data = (data_clipped - min_val) / span
+    norm_data = np.clip(norm_data, 0.0, 1.0).astype(np.float32)
 
     # 创建自定义 colormap
     cmap = LinearSegmentedColormap.from_list("custom_colormap", colors, N=256)
