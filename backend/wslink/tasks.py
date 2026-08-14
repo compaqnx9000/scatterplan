@@ -22,6 +22,13 @@ from scripts.clustering_analysis import ClusteringAnalysis
 from scripts import utils
 from projects.serializers import SingleLinkSerializer, AreaCoverageSerializer, StationsSerializer
 from projects.models import SingleLink, AreaCoverage, Stations
+from projects.services import (
+    resolve_project,
+    ProjectResolveError,
+    safe_filename,
+    upsert_area_coverage,
+    upsert_single_link,
+)
 
 
 def get_media_url(relative_path):
@@ -168,6 +175,17 @@ def calculation_singlelink(user_id: int, channel_name: str, data: dict):
 
     try:
         start_time = time.time()
+        redis_conn = get_redis_connection("business")
+        redis_task_key = f"task:{task_id}"
+        if not redis_conn.get(redis_task_key):
+            redis_conn.setex(redis_task_key, 3600, json.dumps({
+                "task_id": task_id,
+                "task_type": "singlelink",
+                "user_id": user_id,
+                "status": "running",
+                "start_time": time.time()
+            }))
+        report_progress(channel_name, task_id, 'singlelink progress', 0.03)
 
         # 参数提取
         tx_lon = float(data['tx_lon'])
@@ -186,17 +204,6 @@ def calculation_singlelink(user_id: int, channel_name: str, data: dict):
             climate_num = None
 
         calculator = ClimateLossCalculator2(climate_num)
-        redis_conn = get_redis_connection("business")
-        redis_task_key = f"task:{task_id}"
-        if not redis_conn.get(redis_task_key):
-            redis_conn.setex(redis_task_key, 3600, json.dumps({
-                "task_id": task_id,
-                "task_type": "singlelink",
-                "user_id": user_id,
-                "status": "running",
-                "start_time": time.time()
-            }))
-        report_progress(channel_name, task_id, 'singlelink progress', 0.03)
 
         def extract_progress(value):
             report_progress(channel_name, task_id, 'singlelink progress', 0.05 + 0.7 * float(value))
@@ -304,43 +311,25 @@ def calculation_singlelink(user_id: int, channel_name: str, data: dict):
             'calculation_duration': calculation_duration,
             'user': user_id,
         }
-        # 存入数据库（更新或新建）
-        if data.get('id') or SingleLink.objects.filter(name=data['name']).exists():
-            try:
-                if data.get('id'):
-                    instance = SingleLink.objects.get(id=data['id'])
-                else:
-                    instance = SingleLink.objects.get(name=data['name'])
+        try:
+            project = resolve_project(user_id, data)
+        except ProjectResolveError as e:
+            send_ws_message(channel_name, task_id, 'error', {
+                "message": e.message
+            })
+            return
 
-                serializer = SingleLinkSerializer(instance, data=save_data, partial=True)
-                serializer.is_valid(raise_exception=True)
-                serializer.save()
-                print(f'单链路数据更新成功 id: {serializer.data.get("id")}')
-                image_name = serializer.data.get("image_path").split('/')[-1]
-            except SingleLink.DoesNotExist:
-                send_ws_message(channel_name, task_id, 'error', {
-                    "message": "未找到该单链路工程"
-                })
-                return
-            except ValidationError as e:
-                send_ws_message(channel_name, task_id, 'error', {
-                    'message': f'数据验证失败：{e.detail}'
-                })
-                return
+        link_name = (data.get('link_name') or '').strip() or '主链路'
+        save_data['name'] = link_name
+        existing_link = SingleLink.objects.filter(project=project, name=link_name).first()
+        if existing_link and existing_link.image_path:
+            image_name = existing_link.image_path.split('/')[-1]
         else:
-            image_name = f"{data['name']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+            image_name = f"{safe_filename(project.name)}_{safe_filename(link_name)}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
             save_data['image_path'] = get_media_url(f'singlelink/{image_name}')
 
-            serializer = SingleLinkSerializer(data=save_data)
-            try:
-                serializer.is_valid(raise_exception=True)
-                serializer.save()
-                print(f'单链路数据入库成功 id: {serializer.data.get("id")}')
-            except ValidationError as e:
-                send_ws_message(channel_name, task_id, 'error', {
-                    "message": f"数据验证失败：{e.detail}",
-                })
-                return
+        instance = upsert_single_link(project, user_id, link_name, save_data)
+        print(f'单链路数据保存成功 id: {instance.id}')
 
         image_dir = os.path.join(settings.MEDIA_ROOT, 'singlelink')
         os.makedirs(image_dir, exist_ok=True)
@@ -355,7 +344,7 @@ def calculation_singlelink(user_id: int, channel_name: str, data: dict):
         report_progress(channel_name, task_id, 'singlelink progress', 1.0)
 
         send_ws_message(channel_name, task_id, 'singlelink', {
-            "id": serializer.data.get("id"),
+            "id": instance.id,
             'message': '计算成功',
             'distance': round(total_dist_km, 3),
             'median_loss': round(float(final_loss), 3),
@@ -492,46 +481,29 @@ def calculate_coverage_common(user_id: int, channel_name: str, data: dict, area_
         print(f"计算结束 用时{calculation_duration}")
         save_data['calculation_duration'] = calculation_duration
 
-        if data.get('id') or AreaCoverage.objects.filter(name=data['name']).exists():
-            try:
-                if data.get('id'):
-                    instance = AreaCoverage.objects.get(id=data['id'])
-                else:
-                    instance = AreaCoverage.objects.get(name=data['name'])
-                serializer = AreaCoverageSerializer(instance, data=save_data, partial=True)
-                serializer.is_valid(raise_exception=True)
-                serializer.save()
-                print(f'区域覆盖数据更新成功 id: {serializer.data.get("id")}')
-                tif_name = serializer.data.get("tif_path").split('/')[-1]
-                png_name = serializer.data.get("image_path").split('/')[-1]
-            except AreaCoverage.DoesNotExist:
-                send_ws_message(channel_name, task_id, 'error', {
-                    "message": "未找到该区域覆盖工程",
-                })
-                return
-            except ValidationError as e:
-                send_ws_message(channel_name, task_id, 'error', {
-                    "message": f"数据验证失败：{e.detail}",
-                })
-                return
-        else:
-            # 生成文件名
-            tif_name = f"{area_type}_area_{data['name']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.tif"
-            png_name = f"{area_type}_area_{data['name']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+        try:
+            project = resolve_project(user_id, data)
+        except ProjectResolveError as e:
+            send_ws_message(channel_name, task_id, 'error', {
+                "message": e.message,
+            })
+            return
 
+        save_data['name'] = project.name
+        existing = AreaCoverage.objects.filter(project=project).first()
+        if existing and existing.tif_path and existing.image_path:
+            tif_name = existing.tif_path.split('/')[-1]
+            png_name = existing.image_path.split('/')[-1]
+        else:
+            stamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            file_stem = f"{area_type}_area_{safe_filename(project.name)}_{stamp}"
+            tif_name = f"{file_stem}.tif"
+            png_name = f"{file_stem}.png"
             save_data['tif_path'] = f'/media/areacoverage/{tif_name}'
             save_data['image_path'] = get_media_url(f'areacoverage/{png_name}')
 
-            serializer = AreaCoverageSerializer(data=save_data)
-            try:
-                serializer.is_valid(raise_exception=True)
-                serializer.save()
-                print(f'区域覆盖数据存入库成功 id: {serializer.data.get("id")}')
-            except ValidationError as e:
-                send_ws_message(channel_name, task_id, 'error', {
-                    "message": f"数据验证失败：{e.detail}",
-                })
-                return
+        instance = upsert_area_coverage(project, user_id, save_data)
+        print(f'区域覆盖数据保存成功 id: {instance.id}')
 
         image_dir = os.path.join(settings.MEDIA_ROOT, 'areacoverage')
         # print(f'区域覆盖文件夹路径 {image_dir}')
@@ -555,7 +527,7 @@ def calculate_coverage_common(user_id: int, channel_name: str, data: dict, area_
         report_progress(channel_name, task_id, 'coverage progress', 1.0)
 
         send_ws_message(channel_name, task_id, f'{area_type} area', {
-            "id": serializer.data.get("id"),
+            "id": instance.id,
             'message': '计算成功',
             'tif_image_url': f'/media/areacoverage/{tif_name}',
             'png_image_url': get_media_url(f'areacoverage/{png_name}'),

@@ -58,6 +58,10 @@
       </div>
 
       <div class="app-header__right">
+        <div v-if="projectOpen" class="app-header__project">
+          <span class="app-header__project-label">当前工程</span>
+          <span class="app-header__project-name" :title="projectName">{{ projectName }}</span>
+        </div>
         <button
           class="app-header__user"
           type="button"
@@ -93,27 +97,6 @@
             </div>
 
             <div class="app-header__menu-list">
-              <button
-                class="app-header__menu-item"
-                type="button"
-                :class="{ 'is-active': isActive('/sitePlanning') }"
-                @click="goSitePlanning"
-              >
-                <span class="app-header__menu-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <path
-                      d="M5 19V5h4.2l1.1 2.2H19v11.8H5Z"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.6"
-                      stroke-linejoin="round"
-                    />
-                    <path d="M8 12.5h8M8 15.5h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                  </svg>
-                </span>
-                <span>站点规划结果</span>
-              </button>
-
               <button
                 class="app-header__menu-item"
                 type="button"
@@ -218,6 +201,8 @@ const displayEmail = computed(
 const profileOpen = ref(false);
 const systemOpen = ref(false);
 const pickLocked = ref(false);
+const projectOpen = ref(false);
+const projectName = ref("");
 const subMenuActive: any = ref("");
 const headerRef = ref<HTMLElement | null>(null);
 
@@ -245,10 +230,6 @@ const systemChildren = [
 const router = useRouter();
 const route = useRoute();
 
-function isActive(value: string) {
-  return route.path.search(value) != -1 || route.path.startsWith(value + "/");
-}
-
 function isSubMenuItemActive(value: string) {
   return subMenuActive.value === value || route.path.search(value) != -1;
 }
@@ -268,12 +249,6 @@ function goHome() {
   if (pickLocked.value) return;
   closeProfile();
   router.push("/");
-}
-
-function goSitePlanning() {
-  if (pickLocked.value) return;
-  closeProfile();
-  router.push("/sitePlanning/sitePlanning");
 }
 
 function subMenuClick(val: any) {
@@ -299,6 +274,20 @@ const onMapPickMode = (active: boolean) => {
   if (active) closeProfile();
 };
 
+const onProjectOpen = (open: boolean) => {
+  projectOpen.value = !!open;
+  if (!open) projectName.value = "";
+};
+
+const onProjectName = (name: string) => {
+  projectName.value = name || "";
+};
+
+const onLogout = () => {
+  projectOpen.value = false;
+  projectName.value = "";
+};
+
 const onDocClick = (e: MouseEvent) => {
   if (!profileOpen.value) return;
   const el = headerRef.value;
@@ -310,11 +299,17 @@ const onDocClick = (e: MouseEvent) => {
 onMounted(() => {
   document.addEventListener("click", onDocClick);
   $bus?.on("mapPickMode", onMapPickMode);
+  $bus?.on("workflowProjectOpen", onProjectOpen);
+  $bus?.on("workflowProjectName", onProjectName);
+  $bus?.on("Logout", onLogout);
 });
 
 onUnmounted(() => {
   document.removeEventListener("click", onDocClick);
   $bus?.off("mapPickMode", onMapPickMode);
+  $bus?.off("workflowProjectOpen", onProjectOpen);
+  $bus?.off("workflowProjectName", onProjectName);
+  $bus?.off("Logout", onLogout);
 });
 </script>
 
@@ -432,6 +427,38 @@ onUnmounted(() => {
     display: flex;
     align-items: center;
     flex-shrink: 0;
+    gap: 10px;
+  }
+
+  &__project {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    max-width: 280px;
+    min-height: 36px;
+    padding: 4px 14px;
+    border-radius: 999px;
+    background: rgba(0, 162, 255, 0.12);
+    border: 1px solid rgba(0, 162, 255, 0.28);
+    color: #fff;
+  }
+
+  &__project-label {
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    color: rgba(190, 200, 212, 0.75);
+    white-space: nowrap;
+  }
+
+  &__project-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #e8f4ff;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   &__user {

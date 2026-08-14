@@ -1,20 +1,144 @@
 <template>
-  <div class="map-toolbar" :class="{ 'is-pick-locked': pickLocked, 'has-workflow': stationReady }">
+  <div class="map-toolbar has-workflow" :class="{ 'is-pick-locked': pickLocked }">
     <div class="map-toolbar__row">
-      <button
-        class="map-toolbar__btn"
-        type="button"
-        title="站点配置"
-        :disabled="pickLocked"
-        @click="openStationConfig"
+      <div class="map-toolbar__files">
+        <button
+          class="map-toolbar__btn map-toolbar__btn--file"
+          type="button"
+          title="新建工程"
+          :disabled="pickLocked"
+          @click="openNewProject"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M7 3.5h7.2L18.5 8v12.5H7V3.5Z"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M14.2 3.5V8H18.5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linejoin="round"
+            />
+          </svg>
+          <span>新建</span>
+        </button>
+
+        <div ref="projectListRef" class="map-toolbar__open">
+          <button
+            class="map-toolbar__btn map-toolbar__btn--file"
+            type="button"
+            title="打开工程"
+            :disabled="pickLocked"
+            :class="{ 'is-active': projectListOpen }"
+            @click.stop="toggleProjectList"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M3.6 8.2h7.2l1.4 1.8h8.2v9.2H3.6V8.2Z"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M3.6 11.2h16.8l-2.2 7.2H5.8L3.6 11.2Z"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <span>打开</span>
+          </button>
+
+          <div v-if="projectListOpen" class="map-toolbar__projects" @click.stop>
+            <div class="map-toolbar__projects-head">
+              <span>打开工程</span>
+              <em v-if="!projectListLoading">{{ projectList.length }} 个</em>
+            </div>
+
+            <div v-if="projectListLoading" class="map-toolbar__projects-empty">加载中…</div>
+            <div v-else-if="!projectList.length" class="map-toolbar__projects-empty">暂无工程，请先新建</div>
+            <div v-else class="map-toolbar__projects-list">
+              <div
+                v-for="row in projectList"
+                :key="row.id"
+                class="map-toolbar__project"
+                :class="{ 'is-current': String(row.id) === currentProjectId }"
+                @click="openProject(row)"
+              >
+                <div class="map-toolbar__project-main">
+                  <div class="map-toolbar__project-name">
+                    {{ row.name }}
+                    <span v-if="String(row.id) === currentProjectId" class="map-toolbar__project-tag">当前</span>
+                  </div>
+                  <div class="map-toolbar__project-meta">{{ projectMeta(row) }}</div>
+                </div>
+                <div class="map-toolbar__project-side">
+                  <span class="map-toolbar__project-time">{{ formatProjectTime(row.updated_at) }}</span>
+                  <button
+                    class="map-toolbar__project-delete"
+                    type="button"
+                    title="删除工程"
+                    @click.stop="removeProject(row)"
+                  >
+                    删除
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button
+          class="map-toolbar__btn map-toolbar__btn--file"
+          type="button"
+          title="关闭工程"
+          :disabled="pickLocked || !projectOpen"
+          @click="closeProject"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M3.8 7.2h6.2l1.6 2H20.2v10.6H3.8V7.2Z"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linejoin="round"
+            />
+          </svg>
+          <span>关闭</span>
+        </button>
+      </div>
+
+      <div
+        class="map-toolbar__workflow map-toolbar__workflow--project"
+        :class="{ 'is-open': projectOpen }"
+        :aria-hidden="!projectOpen"
       >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            d="M12 3.2c-3.4 0-6.2 2.7-6.2 6.1 0 4.5 5.4 10.4 5.7 10.7l.5.5.5-.5c.3-.3 5.7-6.2 5.7-10.7 0-3.4-2.8-6.1-6.2-6.1Zm0 8.4a2.3 2.3 0 1 1 0-4.6 2.3 2.3 0 0 1 0 4.6Z"
-            fill="currentColor"
-          />
-        </svg>
-      </button>
+        <div class="map-toolbar__vdivider" aria-hidden="true"></div>
+
+        <button
+          class="map-toolbar__btn map-toolbar__btn--file"
+          type="button"
+          title="站点配置"
+          :disabled="pickLocked || !projectOpen"
+          :tabindex="projectOpen ? 0 : -1"
+          @click="openStationConfig"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M12 3.2c-3.4 0-6.2 2.7-6.2 6.1 0 4.5 5.4 10.4 5.7 10.7l.5.5.5-.5c.3-.3 5.7-6.2 5.7-10.7 0-3.4-2.8-6.1-6.2-6.1Zm0 8.4a2.3 2.3 0 1 1 0-4.6 2.3 2.3 0 0 1 0 4.6Z"
+              fill="currentColor"
+            />
+          </svg>
+          <span>站点</span>
+        </button>
+      </div>
 
       <div
         class="map-toolbar__workflow"
@@ -24,7 +148,7 @@
         <div class="map-toolbar__vdivider" aria-hidden="true"></div>
 
         <button
-          class="map-toolbar__btn"
+          class="map-toolbar__btn map-toolbar__btn--file"
           type="button"
           title="配置接收站点"
           :disabled="pickLocked || !stationReady"
@@ -55,10 +179,11 @@
               stroke-linecap="round"
             />
           </svg>
+          <span>链路</span>
         </button>
 
         <button
-          class="map-toolbar__btn"
+          class="map-toolbar__btn map-toolbar__btn--file"
           type="button"
           title="剖面提取"
           :disabled="pickLocked || !stationReady"
@@ -83,10 +208,11 @@
               stroke-linejoin="round"
             />
           </svg>
+          <span>剖面</span>
         </button>
 
         <button
-          class="map-toolbar__btn"
+          class="map-toolbar__btn map-toolbar__btn--file"
           type="button"
           title="区域覆盖计算适配"
           :disabled="pickLocked || !stationReady"
@@ -106,10 +232,11 @@
               opacity="0.7"
             />
           </svg>
+          <span>覆盖</span>
         </button>
 
         <button
-          class="map-toolbar__btn"
+          class="map-toolbar__btn map-toolbar__btn--file"
           type="button"
           title="传输损耗预测"
           :disabled="pickLocked || !stationReady"
@@ -134,10 +261,11 @@
             />
             <path d="M9.4 18.2h5.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
           </svg>
+          <span>损耗</span>
         </button>
 
         <button
-          class="map-toolbar__btn"
+          class="map-toolbar__btn map-toolbar__btn--file"
           type="button"
           title="聚类分析及站点推荐"
           :disabled="pickLocked || !stationReady"
@@ -157,6 +285,7 @@
               stroke-linecap="round"
             />
           </svg>
+          <span>聚类</span>
         </button>
       </div>
     </div>
@@ -302,14 +431,18 @@
 
 <script setup lang="ts">
 import { getCurrentInstance, nextTick, onMounted, onUnmounted, ref } from "vue";
-import { ElMessage } from "element-plus";
+import { useRoute, useRouter } from "vue-router";
+import { ElMessage, ElMessageBox } from "element-plus";
 import { getMapInstance } from "@/assets/util/index";
 import { UseoperatingButton } from "@/view/layout/components/map/service/UseoperatingButton";
 import { Tool } from "@/components/tool/service";
 import { map3dConfig } from "@/view/layout/components/map/config/config";
+import { listProjects, deleteProject } from "@/request/sitePlanting";
 
 const currentInstance = getCurrentInstance();
 const $bus = currentInstance?.appContext.config.globalProperties.$bus;
+const router = useRouter();
+const route = useRoute();
 
 const is3D = ref(true);
 const measuring = ref(false);
@@ -317,6 +450,12 @@ const layerPanelOpen = ref(false);
 const activeBasemap = ref("黑色底图");
 const roadNetworkVisible = ref(true);
 const pickLocked = ref(false);
+const projectOpen = ref(false);
+const projectListOpen = ref(false);
+const projectListLoading = ref(false);
+const projectList = ref<any[]>([]);
+const projectListRef = ref<HTMLElement | null>(null);
+const currentProjectId = ref("");
 const stationReady = ref(false);
 const activeWorkflow = ref<"slp" | "profile" | "coverage" | "prediction" | "cluster" | "">("");
 const profileLoading = ref(false);
@@ -338,44 +477,157 @@ const waitForMap = async () => {
   return null;
 };
 
+const closeProjectList = () => {
+  projectListOpen.value = false;
+};
+
 const toggleLayerPanel = () => {
   if (pickLocked.value) return;
+  closeProjectList();
   layerPanelOpen.value = !layerPanelOpen.value;
 };
 
-const openStationConfig = () => {
+const emitOnHome = (event: string) => {
+  const go = () => $bus?.emit(event);
+  if (route.name === "home" || route.path === "/") {
+    go();
+    return;
+  }
+  router.push("/").then(() => {
+    window.setTimeout(go, 80);
+  });
+};
+
+const formatProjectTime = (value: string) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return String(value).replace("T", " ").slice(0, 16);
+  }
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
+
+const projectMeta = (row: any) => {
+  const parts = [row.username].filter(Boolean);
+  parts.push(row.single_link_count ? `${row.single_link_count}条链路` : "无链路");
+  parts.push(row.has_coverage ? "有覆盖" : "无覆盖");
+  if (row.station_count) parts.push(`${row.station_count}个站点`);
+  return parts.join(" · ");
+};
+
+const loadProjects = async () => {
+  projectListLoading.value = true;
+  try {
+    const all: any[] = [];
+    let page = 1;
+    while (page <= 50) {
+      const res: any = await listProjects({ page });
+      const batch = res?.results || [];
+      all.push(...batch);
+      if (!res?.next || !batch.length) break;
+      page += 1;
+    }
+    projectList.value = all;
+  } catch {
+    projectList.value = [];
+    ElMessage.error("加载工程列表失败");
+  } finally {
+    projectListLoading.value = false;
+  }
+};
+
+const toggleProjectList = async () => {
   if (pickLocked.value) return;
   layerPanelOpen.value = false;
-  $bus?.emit("openLaunchSiteConfig");
+  if (projectListOpen.value) {
+    closeProjectList();
+    return;
+  }
+  projectListOpen.value = true;
+  await loadProjects();
+};
+
+const openProject = (row: any) => {
+  if (!row?.id) return;
+  closeProjectList();
+  if (route.name === "home" || route.path === "/") {
+    $bus?.emit("openProjectById", row.id);
+    return;
+  }
+  router.push({ path: "/", query: { project: String(row.id) } });
+};
+
+const removeProject = (row: any) => {
+  ElMessageBox.confirm("确认删除该工程？工程内的链路、覆盖和站点会一并删除。", "删除工程", {
+    confirmButtonText: "删除",
+    cancelButtonText: "取消",
+    type: "warning",
+    customClass: "gotham-message-box",
+    appendTo: document.body,
+  })
+    .then(async () => {
+      try {
+        await deleteProject(row.id);
+        ElMessage.success("删除成功");
+        if (String(row.id) === currentProjectId.value) {
+          emitOnHome("resetProjectSession");
+        }
+        await loadProjects();
+      } catch {
+        ElMessage.error("删除失败");
+      }
+    })
+    .catch(() => {});
+};
+
+const openNewProject = () => {
+  if (pickLocked.value) return;
+  layerPanelOpen.value = false;
+  closeProjectList();
+  emitOnHome("requestNewProject");
+};
+
+const closeProject = () => {
+  if (pickLocked.value || !projectOpen.value) return;
+  layerPanelOpen.value = false;
+  closeProjectList();
+  emitOnHome("requestCloseProject");
+};
+
+const openStationConfig = () => {
+  if (pickLocked.value || !projectOpen.value) return;
+  layerPanelOpen.value = false;
+  emitOnHome("openLaunchSiteConfig");
 };
 
 const openSLP = () => {
   if (pickLocked.value || !stationReady.value) return;
-  $bus?.emit("openSLPComputedDialog");
+  emitOnHome("openSLPComputedDialog");
 };
 
 const openProfile = () => {
   if (pickLocked.value || !stationReady.value || profileLoading.value) return;
   activeWorkflow.value = "profile";
-  $bus?.emit("openProfileExtract");
+  emitOnHome("openProfileExtract");
 };
 
 const openCoverage = () => {
   if (pickLocked.value || !stationReady.value) return;
   activeWorkflow.value = "coverage";
-  $bus?.emit("openCoverageDialog");
+  emitOnHome("openCoverageDialog");
 };
 
 const openPrediction = () => {
   if (pickLocked.value || !stationReady.value) return;
   activeWorkflow.value = "prediction";
-  $bus?.emit("runTransmissionLossPrediction");
+  emitOnHome("runTransmissionLossPrediction");
 };
 
 const openCluster = () => {
   if (pickLocked.value || !stationReady.value) return;
   activeWorkflow.value = "cluster";
-  $bus?.emit("openClusterDialog");
+  emitOnHome("openClusterDialog");
 };
 
 const selectBasemap = (name: string) => {
@@ -454,9 +706,18 @@ const onMapPickMode = (active: boolean) => {
   pickLocked.value = !!active;
   if (!active) return;
   layerPanelOpen.value = false;
+  closeProjectList();
   if (measuring.value && measureTool) {
     measureTool.clear();
     measuring.value = false;
+  }
+};
+
+const onProjectOpen = (open: boolean) => {
+  projectOpen.value = !!open;
+  if (!open) {
+    stationReady.value = false;
+    activeWorkflow.value = "";
   }
 };
 
@@ -473,12 +734,33 @@ const onWorkflowActive = (name: "slp" | "profile" | "coverage" | "prediction" | 
   activeWorkflow.value = name || "";
 };
 
+const onProjectId = (id: string | number) => {
+  currentProjectId.value = id ? String(id) : "";
+};
+
+const onDocPointerDown = (e: PointerEvent) => {
+  if (!projectListOpen.value) return;
+  const root = projectListRef.value;
+  if (root && !root.contains(e.target as Node)) {
+    closeProjectList();
+  }
+};
+
+const onDocKeydown = (e: KeyboardEvent) => {
+  if (e.key === "Escape" && projectListOpen.value) {
+    closeProjectList();
+  }
+};
+
 const onLogout = () => {
   pickLocked.value = false;
+  projectOpen.value = false;
   stationReady.value = false;
   activeWorkflow.value = "";
   profileLoading.value = false;
   layerPanelOpen.value = false;
+  closeProjectList();
+  currentProjectId.value = "";
   if (measuring.value && measureTool) {
     measureTool.clear();
     measuring.value = false;
@@ -490,10 +772,14 @@ const onLogout = () => {
 onMounted(async () => {
   await nextTick();
   $bus?.on("mapPickMode", onMapPickMode);
+  $bus?.on("workflowProjectOpen", onProjectOpen);
+  $bus?.on("workflowProjectId", onProjectId);
   $bus?.on("workflowStationReady", onStationReady);
   $bus?.on("workflowProfileLoading", onProfileLoading);
   $bus?.on("workflowActive", onWorkflowActive);
   $bus?.on("Logout", onLogout);
+  document.addEventListener("pointerdown", onDocPointerDown);
+  document.addEventListener("keydown", onDocKeydown);
   const map = await waitForMap();
   if (!map) return;
   operatingButton = new UseoperatingButton(map);
@@ -505,10 +791,14 @@ onMounted(async () => {
 
 onUnmounted(() => {
   $bus?.off("mapPickMode", onMapPickMode);
+  $bus?.off("workflowProjectOpen", onProjectOpen);
+  $bus?.off("workflowProjectId", onProjectId);
   $bus?.off("workflowStationReady", onStationReady);
   $bus?.off("workflowProfileLoading", onProfileLoading);
   $bus?.off("workflowActive", onWorkflowActive);
   $bus?.off("Logout", onLogout);
+  document.removeEventListener("pointerdown", onDocPointerDown);
+  document.removeEventListener("keydown", onDocKeydown);
   measureTool?.destroy();
   measureTool = null;
 });
@@ -548,7 +838,7 @@ onUnmounted(() => {
     border-radius 0.3s ease;
 
   &.has-workflow {
-    max-width: 520px;
+    max-width: 860px;
     align-items: flex-start;
     padding: 0;
     gap: 12px;
@@ -577,7 +867,9 @@ onUnmounted(() => {
   &__row,
   &__col,
   &__panel,
-  &__btn {
+  &__btn,
+  &__open,
+  &__projects {
     pointer-events: all;
   }
 
@@ -617,6 +909,9 @@ onUnmounted(() => {
     gap: 6px;
     padding: 6px 8px;
     border-radius: 12px;
+    overflow: visible;
+    position: relative;
+    z-index: 3;
     transition:
       width 0.85s var(--toolbar-ease),
       background 0.5s 0.2s ease,
@@ -660,7 +955,7 @@ onUnmounted(() => {
     }
 
     &.is-open {
-      max-width: 300px;
+      max-width: 420px;
       width: auto;
       min-width: 0;
       flex: 0 1 auto;
@@ -689,6 +984,10 @@ onUnmounted(() => {
       > *:nth-child(5) { transition-delay: 0.5s; }
       > *:nth-child(6) { transition-delay: 0.6s; }
     }
+
+    &--project.is-open {
+      max-width: 96px;
+    }
   }
 
   &__col {
@@ -712,8 +1011,8 @@ onUnmounted(() => {
   }
 
   &.has-workflow &__col {
-    width: 46px;
-    padding: 8px 6px;
+    width: 48px;
+    padding: 8px;
     border-radius: 12px;
     animation: toolbar-col-drop 0.7s 0.18s var(--toolbar-spring) both;
     transition:
@@ -724,6 +1023,179 @@ onUnmounted(() => {
       box-shadow 0.5s 0.22s ease,
       border-radius 0.5s 0.15s ease,
       transform 0.7s 0.18s var(--toolbar-spring);
+  }
+
+  &__files {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 4px;
+    flex-shrink: 0;
+    height: 32px;
+    overflow: visible;
+  }
+
+  &__open {
+    position: relative;
+    z-index: 8;
+    flex-shrink: 0;
+  }
+
+  &__projects {
+    position: absolute;
+    left: 0;
+    top: calc(100% + 10px);
+    z-index: 240;
+    width: 460px;
+    box-sizing: border-box;
+    padding: 12px;
+    border-radius: 12px;
+    background: rgba(26, 32, 42, 0.94);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.42);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    color: #fff;
+  }
+
+  &__projects-head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 2px 4px 10px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+
+    em {
+      font-style: normal;
+      font-size: 11px;
+      font-weight: 500;
+      color: rgba(190, 200, 212, 0.7);
+    }
+  }
+
+  &__projects-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 360px;
+    overflow: auto;
+    box-sizing: border-box;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.18);
+    }
+  }
+
+  &__projects-empty {
+    padding: 18px 8px;
+    text-align: center;
+    font-size: 12px;
+    color: rgba(190, 200, 212, 0.72);
+  }
+
+  &__project {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: #fff;
+    cursor: pointer;
+    text-align: left;
+
+    &:hover,
+    &.is-current {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    &.is-current {
+      box-shadow: inset 0 0 0 1px rgba(0, 162, 255, 0.35);
+    }
+  }
+
+  &__project-main {
+    min-width: 0;
+    flex: 1;
+  }
+
+  &__project-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: #f2f6fa;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__project-tag {
+    flex-shrink: 0;
+    padding: 1px 6px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 500;
+    color: #9fd6ff;
+    background: rgba(0, 162, 255, 0.18);
+  }
+
+  &__project-meta {
+    margin-top: 4px;
+    font-size: 11px;
+    line-height: 1.3;
+    color: rgba(190, 200, 212, 0.72);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__project-side {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 6px;
+    flex: 0 0 auto;
+    min-width: 124px;
+  }
+
+  &__project-time {
+    font-size: 11px;
+    line-height: 1.3;
+    color: rgba(190, 200, 212, 0.62);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__project-delete {
+    border: none;
+    background: transparent;
+    padding: 0;
+    font-size: 12px;
+    line-height: 1.3;
+    white-space: nowrap;
+    color: rgba(255, 138, 128, 0.92);
+    cursor: pointer;
+
+    &:hover {
+      color: #ff9d96;
+    }
   }
 
   &__vdivider {
@@ -780,6 +1252,28 @@ onUnmounted(() => {
 
       &.is-active {
         background: rgba(255, 255, 255, 0.2);
+      }
+    }
+
+    &--file {
+      width: auto;
+      min-width: 32px;
+      height: 32px;
+      padding: 0 8px;
+      gap: 6px;
+      border-radius: 6px;
+
+      svg {
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+      }
+
+      span {
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 1;
+        white-space: nowrap;
       }
     }
   }

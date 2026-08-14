@@ -201,8 +201,8 @@ export class WebSocketService {
 
   // 发送消息
   public send(message: WebSocketMessage) {
-    // 如果连接未打开，加入队列等待发送
-    if (this.status !== 'OPEN' || !this.ws) {
+    if (this.status !== "OPEN" || !this.ws) {
+      this.ensureConnected();
       this.enqueueMessage(message);
       return false;
     }
@@ -214,10 +214,25 @@ export class WebSocketService {
       }));
       return true;
     } catch (error) {
-      console.error('WebSocket send error:', error);
+      console.error("WebSocket send error:", error);
+      this.ensureConnected();
       this.enqueueMessage(message);
       return false;
     }
+  }
+
+  public ensureConnected() {
+    this.isManualClose = false;
+    this.reconnectAttempts = 0;
+    if (this.status === "OPEN") return true;
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = undefined;
+    }
+    if (this.status !== "CONNECTING") {
+      this.connect();
+    }
+    return this.status === "OPEN";
   }
 
   // 手动关闭连接

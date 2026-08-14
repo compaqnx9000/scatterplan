@@ -45,4 +45,33 @@ const validateLatitude = (rule: any, value: string, callback: any) => {
   // 校验通过
   callback();
 };
-export { validateLongitude, validateLatitude };
+const validateFileName = (rule: any, value: string, callback: any) => {
+  const trimmedValue = (value || "").trim();
+  if (!trimmedValue) {
+    return callback(new Error("工程名称不能为空"));
+  }
+
+  const invalidChars = /[\\/:*?"<>|]/g;
+  if (invalidChars.test(trimmedValue)) {
+    return callback(new Error('工程名称不能包含 \\ / : * ? " < > | 字符'));
+  }
+
+  const controlChars = /[\x00-\x1F\x7F]/g;
+  if (controlChars.test(trimmedValue)) {
+    return callback(new Error("工程名称不能包含不可见控制字符"));
+  }
+
+  const reservedNames = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i;
+  const baseName = trimmedValue.split(".")[0];
+  if (reservedNames.test(baseName)) {
+    return callback(new Error("工程名称不能使用系统保留名称（如 con、prn 等）"));
+  }
+
+  if (trimmedValue.length > 255) {
+    return callback(new Error("工程名称长度不能超过 255 字符"));
+  }
+
+  callback();
+};
+
+export { validateLongitude, validateLatitude, validateFileName };

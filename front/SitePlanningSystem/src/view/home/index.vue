@@ -63,6 +63,13 @@
   transform: translateY(-50%);
             " :src="color_line_png" alt="">
     </div>
+    <!-- 新建工程 -->
+    <NewProjectDialog
+      :visible="showNewProjectDialog"
+      @update:visible="(val) => (showNewProjectDialog = val)"
+      @confirm="handleNewProjectConfirm"
+    />
+
     <!-- 发射点配置 -->
 
     <LaunchSiteDialog :visible="visible" @update:isSelectStartPointOver="(val) => {
@@ -402,6 +409,7 @@
 //@ts-nocheck
 import { getCurrentInstance, ref, watch, computed, nextTick, onMounted, onBeforeUnmount } from "vue";
 import LaunchSiteDialog from "./component/LaunchSiteDialog.vue";
+import NewProjectDialog from "./component/NewProjectDialog.vue";
 import SLPComputeDialog from "./component/SLPComputedDialog.vue";
 import ProfileDialog from "./component/ProfileDialog.vue";
 import LinkageCalculationDialog from "./component/LinkageCalculationDialog.vue";
@@ -421,6 +429,7 @@ import { MAP_LABEL_FONT } from "./service/mapLabelStyle";
 
 import { color } from "echarts";
 import { getSingleLinkageImage, getClusterAnalysisList, useSite, exportExcel, setColorGenerateImage, getRecommendSiteList, saveRecommendSiteList, calculateReliability } from "@/request/home";
+import { createProject, getProject } from "@/request/sitePlanting";
 import { ElMessage, ElMessageBox } from "element-plus";
 
 import html2canvas from "html2canvas";
@@ -503,6 +512,9 @@ let MapContainer: mars3d.Map;
 
 
 const isSelectStartPointOver = ref(false);
+const projectOpen = ref(false);
+const currentProjectId = ref("");
+const showNewProjectDialog = ref(false);
 const menuList = reactive([
   {
     name: "单链路计算适配",
@@ -626,8 +638,8 @@ const armNewTask = (kind: "profile" | "coverage") => {
     profileWatchdogTimer = setTimeout(() => {
       if (!showProfileProgressBar.value || profileProgressValue.value > 2) return;
       hideProfileProgress();
-      ElMessage.error("剖面提取长时间无响应，请确认 Celery 服务是否在运行后重试");
-    }, 90000);
+      ElMessage.error("剖面提取无响应，请刷新页面后重试");
+    }, 20000);
   } else {
     clearCoverageWatchdog();
     showProgressBar.value = true;
@@ -835,6 +847,10 @@ const setTableData = (data: any) => {
 $bus.on('rectangleAreaClustering', setTableData)
 
 const onOpenLaunchSiteConfig = () => {
+  if (!projectOpen.value) {
+    showNewProjectDialog.value = true;
+    return;
+  }
   showDialog("visible");
 };
 const onOpenSLPComputedDialog = () => {
@@ -859,6 +875,59 @@ const onOpenClusterDialog = () => {
   $bus.emit("workflowActive", "cluster");
 };
 
+const confirmResetSession = (action: "new" | "close") => {
+  const isNew = action === "new";
+  return ElMessageBox.confirm(
+    isNew
+      ? "将关闭当前工程并清空地图上的接收点、剖面、覆盖区和推荐站点，然后新建工程。已保存到服务器的记录不受影响。"
+      : "将关闭当前工程并清空当前地图会话，回到登录后的初始状态。已保存到服务器的记录不受影响。",
+    isNew ? "新建工程" : "关闭工程",
+    {
+      confirmButtonText: "确定",
+      cancelButtonText: "取消",
+      type: "warning",
+      customClass: "gotham-message-box",
+      appendTo: document.body,
+    }
+  );
+};
+
+const onRequestNewProject = async () => {
+  if (projectOpen.value) {
+    try {
+      await confirmResetSession("new");
+    } catch {
+      return;
+    }
+    resetAppToInitial();
+  }
+  showNewProjectDialog.value = true;
+};
+
+const onRequestCloseProject = async () => {
+  if (!projectOpen.value) return;
+  try {
+    await confirmResetSession("close");
+  } catch {
+    return;
+  }
+  resetAppToInitial();
+};
+
+const handleNewProjectConfirm = async (name: string) => {
+  try {
+    const res: any = await createProject({ name });
+    currentProjectId.value = res.id;
+    drawLaunchSiteForm.name = name;
+    projectOpen.value = true;
+    showNewProjectDialog.value = false;
+  } catch (error: any) {
+    const data = error?.response?.data;
+    const msg = data?.name?.[0] || data?.msg || "创建工程失败";
+    ElMessage.error(typeof msg === "string" ? msg : "创建工程失败");
+  }
+};
+
 const bindHomeBus = () => {
   $bus.all?.delete?.("openLaunchSiteConfig");
   $bus.all?.delete?.("openSLPComputedDialog");
@@ -866,17 +935,24 @@ const bindHomeBus = () => {
   $bus.all?.delete?.("openCoverageDialog");
   $bus.all?.delete?.("runTransmissionLossPrediction");
   $bus.all?.delete?.("openClusterDialog");
+  $bus.all?.delete?.("requestNewProject");
+  $bus.all?.delete?.("requestCloseProject");
   $bus.on("openLaunchSiteConfig", onOpenLaunchSiteConfig);
   $bus.on("openSLPComputedDialog", onOpenSLPComputedDialog);
   $bus.on("openProfileExtract", onOpenProfileExtract);
   $bus.on("openCoverageDialog", onOpenCoverageDialog);
   $bus.on("runTransmissionLossPrediction", onRunTransmissionLossPrediction);
   $bus.on("openClusterDialog", onOpenClusterDialog);
+  $bus.on("requestNewProject", onRequestNewProject);
+  $bus.on("requestCloseProject", onRequestCloseProject);
 };
 
 bindHomeBus();
 
 const resetAppToInitial = () => {
+  if ((route.path === "/" || route.name === "home") && route.query.project) {
+    router.replace({ path: "/" });
+  }
   visible.value = false;
   showSLPComputedDialog.value = false;
   showCommunicationAreaDialog.value = false;
@@ -886,14 +962,33 @@ const resetAppToInitial = () => {
   showColorBarConfigurationDialog.value = false;
   showProfileDialog.value = false;
   showClusterAnalysisSearchDialog.value = false;
+  showNewProjectDialog.value = false;
   isSelectStartPointOver.value = false;
+  projectOpen.value = false;
+  currentProjectId.value = "";
   activeBtnIndex.value = 0;
   lossMapVisible.value = true;
+  progressStopped.value = true;
+  clearProfileWatchdog();
+  clearCoverageWatchdog();
   showProgressBar.value = false;
   progressValue.value = 0;
   showComputedLoading.value = false;
   showProfileProgressBar.value = false;
   profileProgressValue.value = 0;
+  profileReturnTo.value = emptyProfileReturn();
+  handleRelayIndex.value = 0;
+  relayPoint.value = [];
+  SLPCompute_id.value = "";
+  circleArea_tif_image_url.value = "";
+
+  if ($store.state.taskId) {
+    $bus.emit("sendMessage", {
+      task_id: $store.state.taskId,
+      type: "stop_task",
+    });
+    $store.commit("setTaskId", "");
+  }
 
   Object.assign(drawLaunchSiteForm, {
     name: "",
@@ -935,9 +1030,76 @@ const resetAppToInitial = () => {
     centerPointLat: "",
     radius: "",
   });
-  ProfileForm.image_url = "";
-  ProfileForm.samples = [];
-  ProfileForm.distance = 0;
+  Object.assign(clusterAnalysisForm.value, {
+    loss_threshold: "150",
+    limit_road_distance: "500",
+    eps_cells: "500",
+    min_samples: "10",
+    p: "",
+    area_type: "smallRectangle",
+    initialPointLng: "",
+    initialPointLat: "",
+    destinationPointLng: "",
+    destinationPointLat: "",
+    centerPointLng: "",
+    centerPointLat: "",
+    radius: "",
+  });
+  Object.assign(clusterAnalysisFormRelay.value, {
+    area_type: "relayRectangle",
+    initialPointLng: "",
+    initialPointLat: "",
+    destinationPointLng: "",
+    destinationPointLat: "",
+    centerPointLng: "",
+    centerPointLat: "",
+    radius: "",
+  });
+  Object.assign(communicationAreaProhibitedForm.value, {
+    activeProhibitedName: "Rectangle",
+    initialPointLng: "",
+    initialPointLat: "",
+    destinationPointLng: "",
+    destinationPointLat: "",
+    centerPointLng: "",
+    centerPointLat: "",
+    radius: "",
+  });
+  Object.assign(ProfileForm, {
+    image_url: "",
+    samples: [],
+    tx_height: 0,
+    rx_height: 0,
+    min_height: 0,
+    max_height: 0,
+    distance: 0,
+    scatterer_height: 0,
+    scatterer_distance: 0,
+    scatterer_lon: 0,
+    scatterer_lat: 0,
+    tx_lng: 0,
+    tx_lat: 0,
+    tx_barrier_distance: 0,
+    tx_barrier_elev: 0,
+    tx_barrier_height: 0,
+    rx_barrier_distance: 0,
+    rx_barrier_elev: 0,
+    rx_barrier_height: 0,
+    median_loss: 0,
+    residual_value: 0,
+    reliability: 0,
+    recv_power: 0,
+  });
+  Object.assign(linkageCalculationForm, {
+    distance: "",
+    median_loss: "",
+    tx_theta: "",
+    rx_theta: "",
+    theta_scatter: "",
+    area: "",
+    image_url: "",
+    elapsed: "",
+  });
   rectangleArea_tif_url.value = "";
   circleArea_tif_url.value = "";
   rectangleArea_image_url.value = "";
@@ -952,6 +1114,8 @@ const resetAppToInitial = () => {
   $bus.emit("clearAll");
   $bus.emit("workflowStationReady", false);
   $bus.emit("workflowActive", "");
+  $bus.emit("workflowProjectOpen", false);
+  $bus.emit("workflowProjectName", "");
 };
 
 $bus.on("Logout", resetAppToInitial);
@@ -962,6 +1126,30 @@ watch(
     $bus.emit('workflowStationReady', !!ready);
   },
   { immediate: true }
+);
+
+watch(
+  () => projectOpen.value,
+  (open) => {
+    $bus.emit("workflowProjectOpen", !!open);
+    $bus.emit("workflowProjectName", open ? (drawLaunchSiteForm.name || "") : "");
+  },
+  { immediate: true }
+);
+
+watch(
+  () => currentProjectId.value,
+  (id) => {
+    $bus.emit("workflowProjectId", id || "");
+  },
+  { immediate: true }
+);
+
+watch(
+  () => drawLaunchSiteForm.name,
+  (name) => {
+    if (projectOpen.value) $bus.emit("workflowProjectName", name || "");
+  }
 );
 
 watch(
@@ -1158,10 +1346,16 @@ const hasRoundArea = () =>
   hasFilled(CommunicationArea.centerPointLat) &&
   hasFilled(CommunicationArea.radius);
 
+const projectFields = () => ({
+  project_id: currentProjectId.value,
+  project_name: drawLaunchSiteForm.name,
+});
+
 const startRectangleLossPrediction = (colors: string[]) => {
   let sendData: any = {
     id: rectangleArea_tif_id.value ? rectangleArea_tif_id.value : "",
     type: "rectangle area coverage",
+    ...projectFields(),
     name: drawLaunchSiteForm.name,
     tx_gain: drawLaunchSiteForm.tx_gain,
     rx_gain: drawLaunchSiteForm.rx_gain,
@@ -1211,6 +1405,8 @@ const startRoundLossPrediction = (colors: string[]) => {
   armNewTask("coverage");
   $bus.emit("sendMessage", {
     type: "circle area coverage",
+    id: circleArea_tif_id.value ? circleArea_tif_id.value : "",
+    ...projectFields(),
     name: drawLaunchSiteForm.name,
     tx_gain: drawLaunchSiteForm.tx_gain,
     rx_gain: drawLaunchSiteForm.rx_gain,
@@ -1242,9 +1438,12 @@ const clickChildMenu = async (name: any, index: number) => {
         hasFilled(SLPComputeForm.lat)
       ) {
         armNewTask("profile");
+        $bus.emit("wsReconnect");
         $bus.emit("sendMessage", {
           id: SLPCompute_id.value ? SLPCompute_id.value : '',
+          ...projectFields(),
           name: drawLaunchSiteForm.name,
+          link_name: "主链路",
           tx_lon: drawLaunchSiteForm.lng,
           tx_lat: drawLaunchSiteForm.lat,
           tx_height: drawLaunchSiteForm.height ? drawLaunchSiteForm.height : 0,
@@ -1862,6 +2061,10 @@ onBeforeUnmount(() => {
   $bus.off('openCoverageDialog', onOpenCoverageDialog)
   $bus.off('runTransmissionLossPrediction', onRunTransmissionLossPrediction)
   $bus.off('openClusterDialog', onOpenClusterDialog)
+  $bus.off('requestNewProject', onRequestNewProject)
+  $bus.off('requestCloseProject', onRequestCloseProject)
+  $bus.off('openProjectById', onOpenProjectById)
+  $bus.off('resetProjectSession', resetAppToInitial)
   if(showProgressBar.value){
     ElMessage.warning("覆盖计算转入后台");
   }
@@ -2148,7 +2351,9 @@ const handleLinkageCalculation = async (row: any) => {
     startPoint = [drawLaunchSiteForm.lng, drawLaunchSiteForm.lat]
   }
   $bus.emit("sendMessage", {
-    name: drawLaunchSiteForm.name + '_' + row.name,
+    ...projectFields(),
+    name: drawLaunchSiteForm.name,
+    link_name: row.name || "推荐站点",
     tx_lon: startPoint[0],
     tx_lat: startPoint[1],
     tx_height: drawLaunchSiteForm.height ? drawLaunchSiteForm.height : 0,
@@ -2282,10 +2487,301 @@ const addPrimitive = (query: any) => {
     graphicLayer.addGraphic(graphic);
   }
 }
+const pickPrimaryLink = (links = []) => {
+  if (!links.length) return null;
+  return links.find((item) => item.name === "主链路") || links[0];
+};
+
+const fixedNum = (value, digits = 2) => {
+  const n = Number(value);
+  return Number.isFinite(n) ? n.toFixed(digits) : value;
+};
+
+const mapLinkToQuery = (project, link) => ({
+  id: link.id,
+  name: project.name,
+  tx_lon: link.tx_lon,
+  tx_lat: link.tx_lat,
+  tx_height: link.tx_terrain_height,
+  rx_height: link.rx_terrain_height,
+  rx_lon: link.rx_lon,
+  rx_lat: link.rx_lat,
+  tx_gain: link.tx_gain,
+  rx_gain: link.rx_gain,
+  freq: link.freq,
+  trans_power: link.trans_power,
+  diversity_order: link.diversity_order,
+  median_loss: fixedNum(link.median_loss),
+  tx_theta: fixedNum(link.tx_theta),
+  rx_theta: fixedNum(link.rx_theta),
+  theta_scatter: fixedNum(link.theta_scatter),
+  area: link.area,
+  max_height: link.max_height,
+  scatterer_lon: link.scatterer_lon,
+  scatterer_lat: link.scatterer_lat,
+  scatterer_height: link.scatterer_height,
+  image_path: link.image_path,
+  distance_km: link.distance_km,
+  residual_value: fixedNum(link.residual_value),
+  reliability: link.reliability,
+  recv_power: fixedNum(link.recv_power),
+  tx_azimuth: fixedNum(link.tx_azimuth),
+  rx_azimuth: fixedNum(link.rx_azimuth),
+  comm_rate: link.comm_rate,
+  tx_barrier_distance: fixedNum(link.tx_barrier_distance),
+  rx_barrier_distance: fixedNum(link.rx_barrier_distance),
+  tx_barrier_height: link.tx_barrier_height,
+  rx_barrier_height: link.rx_barrier_height,
+  tx_station_name: link.tx_station_name,
+  rx_station_name: link.rx_station_name,
+});
+
+const mapCoverageToQuery = (coverage) => ({
+  id: coverage.id,
+  name: coverage.name,
+  tx_gain: coverage.tx_gain,
+  rx_gain: coverage.rx_gain,
+  trans_power: coverage.trans_power,
+  diversity_order: coverage.diversity_order,
+  tx_lon: coverage.tx_longitude,
+  tx_lat: coverage.tx_latitude,
+  tx_height: 10,
+  freq: coverage.frequency,
+  coverage_type: coverage.coverage_type,
+  rectangle_min_longitude: coverage.rectangle_min_longitude,
+  rectangle_max_longitude: coverage.rectangle_max_longitude,
+  rectangle_min_latitude: coverage.rectangle_min_latitude,
+  rectangle_max_latitude: coverage.rectangle_max_latitude,
+  circle_center_longitude: coverage.circle_center_longitude,
+  circle_center_latitude: coverage.circle_center_latitude,
+  circle_radius: coverage.circle_radius,
+  tif_path: coverage.tif_path,
+  image_path: coverage.image_path,
+  loss_threshold: coverage.loss_threshold,
+  eps_cells: coverage.eps_cells,
+  min_samples: coverage.min_samples,
+  p: coverage.p,
+  created_at: coverage.created_at,
+  image_colors: coverage.image_colors,
+  image_max: coverage.image_max,
+  image_min: coverage.image_min,
+  comm_rate: coverage.comm_rate,
+  tx_station_name: coverage.tx_station_name,
+  subrange_circle_center_latitude: coverage.subrange_circle_center_latitude,
+  subrange_circle_center_longitude: coverage.subrange_circle_center_longitude,
+  subrange_circle_radius: coverage.subrange_circle_radius,
+  subrange_rectangle_max_latitude: coverage.subrange_rectangle_max_latitude,
+  subrange_rectangle_max_longitude: coverage.subrange_rectangle_max_longitude,
+  subrange_rectangle_min_latitude: coverage.subrange_rectangle_min_latitude,
+  subrange_rectangle_min_longitude: coverage.subrange_rectangle_min_longitude,
+  subrange_type: coverage.subrange_type,
+  prohibited_area_type: coverage.prohibited_area_type,
+  prohibited_min_longitude: coverage.prohibited_min_longitude,
+  prohibited_min_latitude: coverage.prohibited_min_latitude,
+  prohibited_max_longitude: coverage.prohibited_max_longitude,
+  prohibited_max_latitude: coverage.prohibited_max_latitude,
+  prohibited_center_longitude: coverage.prohibited_center_longitude,
+  prohibited_center_latitude: coverage.prohibited_center_latitude,
+  prohibited_radius: coverage.prohibited_radius,
+  relay_longitude: coverage.relay_longitude,
+  relay_latitude: coverage.relay_latitude,
+  limit_road_distance: coverage.limit_road_distance,
+});
+
+const restoreCoverageOnMap = (query, stations = []) => {
+  rectangleArea_tif_id.value = query.id;
+  circleArea_tif_id.value = query.id;
+  activeBtnIndex.value = 1;
+
+  if (query.image_colors) {
+    const image_colors = String(query.image_colors).split(" ");
+    colorBarList[radio1.value].colors.forEach((item, index) => {
+      if (image_colors[index]) item.color = image_colors[index];
+    });
+  }
+  if (query.image_max) {
+    threshold_end.value = Number(query.image_max);
+  }
+  if (query.image_min) {
+    threshold_start.value = Number(query.image_min);
+  }
+  if (query.coverage_type === "rectangle") {
+    $bus.emit("addRectangleAreaImg", {
+      initialPoint: [query.rectangle_min_longitude, query.rectangle_min_latitude],
+      destinationPoint: [query.rectangle_max_longitude, query.rectangle_max_latitude],
+      png_image_url: query.image_path + "?time=" + new Date().getTime(),
+    });
+  } else if (query.coverage_type === "circle") {
+    $bus.emit("addCircleAreaImg", {
+      center: [Number(query.circle_center_longitude), Number(query.circle_center_latitude)],
+      radius: Number(query.circle_radius),
+      png_image_url: query.image_path + "?time=" + new Date().getTime(),
+    });
+  }
+
+  if (query.subrange_type === "rectangle") {
+    $bus.emit("addSmallRectangleAreaImg", {
+      initialPoint: [query.subrange_rectangle_min_longitude, query.subrange_rectangle_min_latitude],
+      destinationPoint: [query.subrange_rectangle_max_longitude, query.subrange_rectangle_max_latitude],
+    });
+  } else if (query.subrange_type === "circle") {
+    $bus.emit("addSmallCircleAreaImg", {
+      center: [query.subrange_circle_center_longitude, query.subrange_circle_center_latitude],
+      radius: query.subrange_circle_radius,
+    });
+  }
+
+  if (query.prohibited_area_type === "rectangle") {
+    $bus.emit("addProhibitedCommunicationAreaImg", {
+      type: "Rectangle",
+      initialPoint: [query.prohibited_min_longitude, query.prohibited_min_latitude],
+      destinationPoint: [query.prohibited_max_longitude, query.prohibited_max_latitude],
+    });
+  } else if (query.prohibited_area_type === "circle") {
+    $bus.emit("addProhibitedCommunicationAreaImg", {
+      type: "Round",
+      center: [query.prohibited_center_longitude, query.prohibited_center_latitude],
+      radius: query.prohibited_radius,
+    });
+  }
+
+  if (query.relay_longitude && query.relay_latitude) {
+    relayPoint.value = [query.relay_longitude, query.relay_latitude];
+    $bus.emit("addRelayStationImg", {
+      center: [query.relay_longitude, query.relay_latitude],
+    });
+  }
+
+  const rows = (stations || []).map((item, index) => ({
+    ...item,
+    name: item.name || "推荐站点" + (index + 1),
+    number: item.number,
+    latitude: item.latitude || item.center_latitude,
+    longitude: item.longitude || item.center_longitude,
+    slope: item.slope || item.to_road_slope,
+  }));
+  tableData.value = rows;
+  if (rows.length) {
+    $bus.emit("addClusterPoint", rows);
+  }
+};
+
+const restoreProjectFromId = async (projectId) => {
+  try {
+    const project: any = await getProject(projectId);
+    currentProjectId.value = project.id;
+    projectOpen.value = true;
+    isSelectStartPointOver.value = true;
+
+    const link = pickPrimaryLink(project.single_links || []);
+    const coverage = project.coverage;
+    const stations = project.stations || [];
+    const query: any = { name: project.name };
+
+    if (link) {
+      Object.assign(query, mapLinkToQuery(project, link));
+    }
+    if (coverage) {
+      const coverageQuery = mapCoverageToQuery(coverage);
+      Object.assign(query, coverageQuery, {
+        name: project.name,
+        image_path: link?.image_path || coverage.image_path,
+        tif_path: coverage.tif_path,
+      });
+      if (link) {
+        query.tx_lon = link.tx_lon;
+        query.tx_lat = link.tx_lat;
+        query.tx_height = link.tx_terrain_height;
+        query.tx_gain = link.tx_gain;
+        query.rx_gain = link.rx_gain;
+        query.freq = link.freq;
+        query.trans_power = link.trans_power;
+        query.diversity_order = link.diversity_order;
+        query.comm_rate = link.comm_rate;
+        query.tx_station_name = link.tx_station_name;
+      }
+    }
+
+    initstartEndPoint(query);
+    if (link?.image_path) {
+      ProfileForm.image_url = link.image_path + "?t=" + new Date().getTime();
+    }
+    if (coverage) {
+      rectangleArea_tif_url.value = coverage.tif_path;
+      rectangleArea_image_url.value = coverage.image_path;
+      circleArea_tif_url.value = coverage.tif_path;
+      circleArea_image_url.value = coverage.image_path;
+    }
+
+    if (query.tx_lon && query.tx_lat) {
+      $bus.emit("setLaunchSite", {
+        type: "LaunchSite",
+        lng: query.tx_lon,
+        lat: query.tx_lat,
+        height: query.tx_height,
+      });
+    }
+    if (link) {
+      $bus.emit("setSLPCompute", {
+        type: "SLPCompute",
+        lng: link.rx_lon,
+        lat: link.rx_lat,
+        height: link.rx_terrain_height,
+      });
+      $bus.emit("setSingleLink", {
+        startPoint: [link.tx_lon, link.tx_lat, link.tx_terrain_height],
+        endPoint: [link.rx_lon, link.rx_lat, link.rx_terrain_height],
+        scatterer_lon: link.scatterer_lon,
+        scatterer_lat: link.scatterer_lat,
+        scatterer_height: link.scatterer_height,
+      });
+    }
+    if (coverage) {
+      restoreCoverageOnMap(mapCoverageToQuery(coverage), stations);
+      getTableDataTime.value = coverage.cluster_duration;
+    }
+
+    const firstStation = stations[0];
+    const flyLon = Number(
+      firstStation?.center_longitude ?? firstStation?.longitude ?? (link ? link.rx_lon : query.tx_lon)
+    );
+    const flyLat = Number(
+      firstStation?.center_latitude ?? firstStation?.latitude ?? (link ? link.rx_lat : query.tx_lat)
+    );
+    if (MapContainer && Number.isFinite(flyLon) && Number.isFinite(flyLat)) {
+      MapContainer.camera.flyTo({
+        destination: mars3d.Cesium.Cartesian3.fromDegrees(flyLon, flyLat, 80000),
+        duration: 1.2,
+      });
+    }
+  } catch (error) {
+    ElMessage.error("打开工程失败");
+  }
+};
+
+const onOpenProjectById = async (projectId) => {
+  if (!projectId) return;
+  if (String(currentProjectId.value) === String(projectId) && projectOpen.value) {
+    return;
+  }
+  if (projectOpen.value) {
+    resetAppToInitial();
+  }
+  await restoreProjectFromId(projectId);
+  if (route.path === "/" || route.name === "home") {
+    router.replace({ path: "/", query: { project: String(projectId) } });
+  }
+};
+
+$bus.all?.delete?.("openProjectById");
+$bus.all?.delete?.("resetProjectSession");
+$bus.on("openProjectById", onOpenProjectById);
+$bus.on("resetProjectSession", resetAppToInitial);
+
 const relayPoint = ref([])
 onMounted(async () => {
   window.addEventListener("keydown", onClusterResultEsc);
-  await nextTick(() => {
+  await nextTick(async () => {
     MapContainer = getMapInstance();
     const main = new Main(MapContainer);
     MapContainer && MapContainer.addLayer(graphicLayer);
@@ -2309,8 +2805,11 @@ onMounted(async () => {
     // 接收页面的 query 值，如果有值，则对当前页面数据进行回显
     const query = route.query;
 
-    if (query.type) {
+    if (query.project) {
+      await restoreProjectFromId(query.project);
+    } else if (query.type) {
       // 如果 type === 'singleLink' 则进行单链规划回显
+      projectOpen.value = true
       isSelectStartPointOver.value = true
       if (query.type === 'singleLink') {
         // 单链规划回显

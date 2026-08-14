@@ -41,10 +41,6 @@
                 <el-input v-model="drawLaunchSiteForm.point_name" placeholder="请输入站点名称" clearable />
               </el-form-item>
 
-              <el-form-item label="工程名称" prop="name">
-                <el-input v-model="drawLaunchSiteForm.name" placeholder="请输入工程名称" clearable />
-              </el-form-item>
-
               <el-form-item label="坐标" prop="coordinate">
                 <div class="station-config__coord-row">
                   <el-input :model-value="coordDisplay" placeholder="经度, 纬度" readonly />
@@ -184,44 +180,7 @@ import { shakeInvalidFormFields } from "@/view/home/service/formShake";
 let currentInstance = getCurrentInstance();
 let $bus = currentInstance?.appContext.config.globalProperties.$bus;
 
-const validateFileName = (rule, value, callback) => {
-  const trimmedValue = (value || "").trim();
-  if (!trimmedValue) {
-    return callback(new Error("文件名不能为空"));
-  }
-
-  const invalidChars = /[\\/:*?"<>|]/g;
-  if (invalidChars.test(trimmedValue)) {
-    return callback(new Error('文件名不能包含 \\ / : * ? " < > | 字符'));
-  }
-
-  const controlChars = /[\x00-\x1F\x7F]/g;
-  if (controlChars.test(trimmedValue)) {
-    return callback(new Error("文件名不能包含不可见控制字符"));
-  }
-
-  const reservedNames = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i;
-  const baseName = trimmedValue.split(".")[0];
-  if (reservedNames.test(baseName)) {
-    return callback(new Error("文件名不能使用系统保留名称（如 con、prn 等）"));
-  }
-
-  if (trimmedValue.length > 255) {
-    return callback(new Error("文件名长度不能超过 255 字符"));
-  }
-
-  callback();
-};
-
 const rules = ref({
-  name: [
-    { required: true, message: "请输入工程名称", trigger: "change" },
-    {
-      required: true,
-      validator: validateFileName,
-      trigger: ["blur", "change"],
-    },
-  ],
   diversity_order: [{ required: true, message: "请输入调整系数", trigger: "change" }],
   tx_gain: [{ required: true, message: "请输入发射天线增益", trigger: "change" }],
   rx_gain: [{ required: true, message: "请输入接收天线增益", trigger: "change" }],

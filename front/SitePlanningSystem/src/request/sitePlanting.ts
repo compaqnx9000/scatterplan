@@ -1,6 +1,36 @@
 import service from "./request"
 
 
+export function listProjects(query: any) {
+  return service({
+    url: "/projects/plans/",
+    method: "get",
+    params: query,
+  });
+}
+
+export function createProject(data: { name: string }) {
+  return service({
+    url: "/projects/plans/",
+    method: "post",
+    data,
+  });
+}
+
+export function getProject(id: number | string) {
+  return service({
+    url: `/projects/plans/${id}/`,
+    method: "get",
+  });
+}
+
+export function deleteProject(id: number | string) {
+  return service({
+    url: `/projects/plans/${id}/`,
+    method: "delete",
+  });
+}
+
 // 获取单链路记录
 export function listSingleLink(query: any){
   return service({

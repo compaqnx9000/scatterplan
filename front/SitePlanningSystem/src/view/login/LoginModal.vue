@@ -83,7 +83,7 @@
 
 <script lang="ts" setup>
 //@ts-nocheck
-import { reactive, onMounted, watch } from "vue";
+import { reactive, onMounted, watch, getCurrentInstance } from "vue";
 import { useRouter } from "vue-router";
 import store from "@/store/index";
 import { login } from "@/request/user";
@@ -168,6 +168,8 @@ async function checkLogin() {
     }
 
     emit("success");
+    const bus = getCurrentInstance()?.appContext.config.globalProperties.$bus;
+    bus?.emit("wsReconnect");
   } catch (error) {
     // request layer already toasts
   } finally {

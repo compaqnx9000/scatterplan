@@ -280,7 +280,7 @@ export class main {
       url: config.VITE_APP_WS_url + "?token=" + token,
       heartbeatInterval: 30000, // 30秒一次心跳
       reconnectInterval: 3000, // 3秒后尝试重连
-      maxReconnectAttempts: 10, // 最大重连10次
+      maxReconnectAttempts: Infinity,
     });
 
     // 监听连接打开
@@ -308,6 +308,9 @@ export class main {
       if (this.wsService) {
         this.wsService.close(1000, "用户主动断开连接");
       }
+    });
+    this.$bus.on("wsReconnect", () => {
+      this.wsService?.ensureConnected?.();
     });
     // 监听消息接收
     this.wsService.onMessage((message: any) => {

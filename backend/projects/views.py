@@ -15,8 +15,12 @@ from django.conf import settings
 # from django.contrib.gis.geos import Point
 # from django.contrib.gis.db.models.functions import Distance
 
-from .models import SingleLink, AreaCoverage, Stations
+from django.db.models import Count, Exists, OuterRef
+
+from .models import Project, SingleLink, AreaCoverage, Stations
 from .serializers import (
+    ProjectListSerializer,
+    ProjectDetailSerializer,
     SingleLinkSerializer,
     AreaCoverageSerializer,
     # DandongSerializer,
@@ -29,6 +33,104 @@ from .serializers import (
 # from scripts.clustering_analysis import ClusteringAnalysis
 from scripts.tif2png import convert_tif_to_image
 from scripts import utils
+
+
+def _media_abs(file_path):
+    if not file_path:
+        return ""
+    relative = str(file_path).split("media/", 1)[-1].lstrip("/")
+    return path.join(settings.MEDIA_ROOT, relative)
+
+
+def _delete_file(file_path):
+    abs_path = _media_abs(file_path)
+    if abs_path and path.exists(abs_path):
+        try:
+            remove(abs_path)
+            print(f"已删除文件: {abs_path}")
+        except Exception as e:
+            print(f"删除文件失败: {abs_path}, 错误: {e}")
+
+
+def _delete_singlelink_files(instance):
+    _delete_file(instance.image_path)
+
+
+def _delete_areacoverage_files(instance):
+    _delete_file(instance.tif_path)
+    _delete_file(instance.image_path)
+    _delete_file(instance.excel_path)
+
+
+def _can_manage(user, owner):
+    return user.is_staff or user.is_superuser or owner == user
+
+
+class ProjectViewSet(mixins.ListModelMixin,
+                     mixins.RetrieveModelMixin,
+                     mixins.CreateModelMixin,
+                     mixins.DestroyModelMixin,
+                     viewsets.GenericViewSet):
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ["user__username"]
+    search_fields = ["name"]
+    ordering_fields = ["id", "created_at", "updated_at"]
+
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return ProjectDetailSerializer
+        return ProjectListSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = Project.objects.select_related("user")
+        if not (user.is_staff or user.is_superuser):
+            queryset = queryset.filter(user=user)
+        if self.action == "retrieve":
+            queryset = queryset.select_related("coverage").prefetch_related(
+                "single_links", "coverage__stations"
+            )
+        elif self.action == "list":
+            queryset = queryset.annotate(
+                single_link_count=Count("single_links", distinct=True),
+                has_coverage=Exists(AreaCoverage.objects.filter(project_id=OuterRef("pk"))),
+                station_count=Count("coverage__stations", distinct=True),
+            )
+        return queryset.order_by("-updated_at", "-id")
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            name_err = serializer.errors.get("name")
+            msg = name_err[0] if name_err else "创建工程失败"
+            return Response({"msg": str(msg), **serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        self.perform_create(serializer)
+        instance = (
+            self.get_queryset()
+            .annotate(
+                single_link_count=Count("single_links", distinct=True),
+                has_coverage=Exists(AreaCoverage.objects.filter(project_id=OuterRef("pk"))),
+                station_count=Count("coverage__stations", distinct=True),
+            )
+            .get(pk=serializer.instance.pk)
+        )
+        return Response(ProjectListSerializer(instance).data, status=status.HTTP_201_CREATED)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    def perform_destroy(self, instance):
+        user = self.request.user
+        if not _can_manage(user, instance.user):
+            raise PermissionDenied("你没有权限删除这个工程")
+        for link in instance.single_links.all():
+            _delete_singlelink_files(link)
+        try:
+            _delete_areacoverage_files(instance.coverage)
+        except AreaCoverage.DoesNotExist:
+            pass
+        instance.delete()
 
 
 # 单链路查询删除
@@ -59,20 +161,10 @@ class SingleLinkViewSet(mixins.ListModelMixin,
         管理员可以删除任意记录，普通用户只能删除自己的记录
         """
         user = self.request.user
-        if not (user.is_staff or user.is_superuser or instance.user == user):
+        if not _can_manage(user, instance.user):
             raise PermissionDenied("你没有权限删除这个工程")
 
-        # 删除关联的图片文件
-        if instance.image_path:
-            file_path = path.join(settings.MEDIA_ROOT, instance.image_path)
-            if path.exists(file_path):
-                try:
-                    remove(file_path)
-                    print(f"已删除文件: {file_path}")
-                except Exception as e:
-                    print(f"删除文件失败: {file_path}, 错误: {e}")
-
-        # 删除数据库记录
+        _delete_singlelink_files(instance)
         instance.delete()
 
 
@@ -127,38 +219,10 @@ class AreaCoverageViewSet(mixins.ListModelMixin,
         管理员可以删除任意记录，普通用户只能删除自己的记录
         """
         user = self.request.user
-        if not (user.is_staff or user.is_superuser or instance.user == user):
+        if not _can_manage(user, instance.user):
             raise PermissionDenied("你没有权限删除这个工程")
 
-        # 删除关联的图片文件
-        tif_path = instance.tif_path.split('media/', 1)[-1]
-        image_path = instance.image_path.split('media/', 1)[-1]
-        abs_tif_path = path.join(settings.MEDIA_ROOT, tif_path)
-        abs_image_path = path.join(settings.MEDIA_ROOT, image_path)
-        if path.exists(abs_tif_path):
-            try:
-                remove(abs_tif_path)
-                print(f"已删除文件: {abs_tif_path}")
-            except Exception as e:
-                print(f"删除文件失败: {abs_tif_path}, 错误: {e}")
-        if path.exists(abs_image_path):
-            try:
-                remove(abs_image_path)
-                print(f"已删除文件: {abs_image_path}")
-            except Exception as e:
-                print(f"删除文件失败: {abs_image_path}, 错误: {e}")
-
-        if instance.excel_path:
-            excel_path = instance.excel_path.split('media/', 1)[-1]
-            abs_excel_path = path.join(settings.MEDIA_ROOT, excel_path)
-            if path.exists(abs_excel_path):
-                try:
-                    remove(abs_excel_path)
-                    print(f"已删除文件: {abs_excel_path}")
-                except Exception as e:
-                    print(f"删除文件失败: {abs_excel_path}, 错误: {e}")
-
-        # 删除数据库记录
+        _delete_areacoverage_files(instance)
         instance.delete()
 
 

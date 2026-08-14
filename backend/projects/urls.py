@@ -1,6 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
+    ProjectViewSet,
     SingleLinkViewSet,
     AreaCoverageViewSet,
     # SitePlannerView,
@@ -12,6 +13,7 @@ from .views import (
 )
 
 router = DefaultRouter()
+router.register(r'plans', ProjectViewSet, basename='project')
 router.register(r'singlelinks', SingleLinkViewSet, basename='singlelink')
 router.register(r'areacoverages', AreaCoverageViewSet, basename='areacoverage')
 
