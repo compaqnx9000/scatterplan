@@ -668,15 +668,15 @@ onBeforeUnmount(() => {
     flex-direction: column;
     gap: 4px;
     scrollbar-width: thin;
-    scrollbar-color: rgba(90, 96, 104, 0.95) rgba(18, 22, 28, 0.9);
+    scrollbar-color: rgba(157, 223, 46, 0.55) transparent;
 
     &::-webkit-scrollbar { width: 8px; }
     &::-webkit-scrollbar-track {
-      background: rgba(18, 22, 28, 0.9);
+      background: transparent;
       border-radius: 8px;
     }
     &::-webkit-scrollbar-thumb {
-      background: rgba(72, 78, 86, 0.95);
+      background: rgba(157, 223, 46, 0.55);
       border-radius: 8px;
     }
   }

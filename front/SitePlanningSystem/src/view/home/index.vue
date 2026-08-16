@@ -35,7 +35,7 @@
     <!-- <ScreenshotTool></ScreenshotTool> -->
     <div v-if="showProfileProgressBar" class="screen-progress">
       <div class="progress-bar-wrapper">
-        <div class="progress-label">剖面提取</div>
+        <div class="progress-label">链路计算</div>
         <el-progress :stroke-width="12" :percentage="profileProgressValue" :show-text="true" />
         <div class="progress-stop-btn" @click.stop="handleStopProgress">停止</div>
       </div>
@@ -93,20 +93,11 @@
       :visible="showProfileDialog"
       :imageUrl="ProfileForm.image_url"
       :insights="ProfileForm"
-      :loading="loadingProfileDialog"
-      @update:visible="handleProfileVisible"
-      @confirm="handleConfirmProfile"
-    />
-
-    <!-- 链路计算 -->
-    <LinkageCalculationDialog
-      :visible="showLinkageCalculationDialog"
       :form="linkageCalculationForm"
       :rxLng="SLPComputeForm.lng"
       :rxLat="SLPComputeForm.lat"
-      :time="time"
-      @update:visible="(val) => (showLinkageCalculationDialog = val)"
-      @confirm="handleConfirmLinkageCalculation"
+      :loading="loadingProfileDialog"
+      @update:visible="handleProfileVisible"
       @export="handleExport"
       @changeCommRate="handleChangeCommRate"
     />
@@ -444,7 +435,6 @@ import LaunchSiteDialog from "./component/LaunchSiteDialog.vue";
 import NewProjectDialog from "./component/NewProjectDialog.vue";
 import SLPComputeDialog from "./component/SLPComputedDialog.vue";
 import ProfileDialog from "./component/ProfileDialog.vue";
-import LinkageCalculationDialog from "./component/LinkageCalculationDialog.vue";
 import CommunicationAreaDialog from "./component/CommunicationAreaDialog.vue";
 import ClusterAnalysisSearchDialog from "./component/ClusterAnalysisSearchDialog.vue";
 import TransmissionLossConfigDialog from "./component/TransmissionLossConfigDialog.vue";
@@ -636,10 +626,10 @@ const handleProfileVisible = (val: boolean) => {
   if (!val) restoreProfileReturn();
 };
 
-const handleConfirmProfile = () => {
-  clearProfileReturn();
-  showProfileDialog.value = false;
-};
+const hasLinkResult = () =>
+  hasFilled(linkageCalculationForm.distance) ||
+  hasFilled(ProfileForm.image_url) ||
+  hasFilled(linkageCalculationForm.image_url);
 const showComputedLoading = ref(false);
 const progressStopped = ref(false);
 let profileWatchdogTimer: ReturnType<typeof setTimeout> | null = null;
@@ -671,7 +661,7 @@ const armNewTask = (kind: "profile" | "coverage") => {
     profileWatchdogTimer = setTimeout(() => {
       if (!showProfileProgressBar.value || profileProgressValue.value > 2) return;
       hideProfileProgress();
-      ElMessage.error("剖面提取无响应，请刷新页面后重试");
+      ElMessage.error("链路计算无响应，请刷新页面后重试");
     }, 20000);
   } else {
     clearCoverageWatchdog();
@@ -895,19 +885,11 @@ const onOpenSLPComputedDialog = () => {
 };
 const onOpenProfileExtract = () => {
   $bus.emit("workflowActive", "profile");
-  clickChildMenu("profile", 0);
-};
-const onOpenLinkAnalysis = () => {
-  if (
-    !hasFilled(linkageCalculationForm.distance) &&
-    !hasFilled(linkageCalculationForm.image_url) &&
-    !hasFilled(ProfileForm.image_url)
-  ) {
-    ElMessage.warning("请先完成剖面提取");
+  if (hasLinkResult()) {
+    showProfileDialog.value = true;
     return;
   }
-  showLinkageCalculationDialog.value = true;
-  $bus.emit("workflowActive", "linkage");
+  clickChildMenu("profile", 0);
 };
 const onOpenCoverageDialog = () => {
   showDialog("showCommunicationAreaDialog", 1);
@@ -983,7 +965,6 @@ const bindHomeBus = () => {
   $bus.all?.delete?.("openLaunchSiteConfig");
   $bus.all?.delete?.("openSLPComputedDialog");
   $bus.all?.delete?.("openProfileExtract");
-  $bus.all?.delete?.("openLinkAnalysis");
   $bus.all?.delete?.("openCoverageDialog");
   $bus.all?.delete?.("runTransmissionLossPrediction");
   $bus.all?.delete?.("openClusterDialog");
@@ -992,7 +973,6 @@ const bindHomeBus = () => {
   $bus.on("openLaunchSiteConfig", onOpenLaunchSiteConfig);
   $bus.on("openSLPComputedDialog", onOpenSLPComputedDialog);
   $bus.on("openProfileExtract", onOpenProfileExtract);
-  $bus.on("openLinkAnalysis", onOpenLinkAnalysis);
   $bus.on("openCoverageDialog", onOpenCoverageDialog);
   $bus.on("runTransmissionLossPrediction", onRunTransmissionLossPrediction);
   $bus.on("openClusterDialog", onOpenClusterDialog);
@@ -1940,6 +1920,9 @@ const handleChangeCommRate = async (val) => {
     linkageCalculationForm.reliability = res.reliability;
     linkageCalculationForm.residual_value = res.residual_value;
     linkageCalculationForm.recv_power = res.recv_power;
+    ProfileForm.reliability = Number(res.reliability) || 0;
+    ProfileForm.residual_value = Number(res.residual_value) || 0;
+    ProfileForm.recv_power = Number(res.recv_power) || 0;
 
     ElMessage.success("计算成功");
   } catch (error) {
@@ -2210,7 +2193,6 @@ onBeforeUnmount(() => {
   $bus.off('openLaunchSiteConfig', onOpenLaunchSiteConfig)
   $bus.off('openSLPComputedDialog', onOpenSLPComputedDialog)
   $bus.off('openProfileExtract', onOpenProfileExtract)
-  $bus.off('openLinkAnalysis', onOpenLinkAnalysis)
   $bus.off('openCoverageDialog', onOpenCoverageDialog)
   $bus.off('runTransmissionLossPrediction', onRunTransmissionLossPrediction)
   $bus.off('openClusterDialog', onOpenClusterDialog)

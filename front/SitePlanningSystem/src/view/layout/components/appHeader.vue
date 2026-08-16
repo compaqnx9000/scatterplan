@@ -581,7 +581,7 @@ onUnmounted(() => {
     -webkit-font-smoothing: antialiased;
     box-sizing: border-box;
     scrollbar-width: thin;
-    scrollbar-color: #6a6a6a #2a2a2a;
+    scrollbar-color: rgba(157, 223, 46, 0.55) transparent;
 
     *,
     *::before,

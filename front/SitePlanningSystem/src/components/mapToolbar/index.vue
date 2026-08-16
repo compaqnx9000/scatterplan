@@ -90,27 +90,13 @@
             key="profile"
             class="map-toolbar__tab"
             type="button"
-            title="剖面提取"
+            title="链路计算"
             :disabled="pickLocked || profileLoading || (!profileReady && !railFull)"
-            :class="{ 'is-active': activeWorkflow === 'profile', 'is-loading': profileLoading }"
-            @click="openProfile"
+            :class="{ 'is-active': activeWorkflow === 'profile' || activeWorkflow === 'linkage', 'is-loading': profileLoading }"
+            @click="openLinkCompute"
           >
             <span class="material-symbols-outlined">show_chart</span>
-            <span class="map-toolbar__tab-label">剖面</span>
-          </button>
-
-          <button
-            v-if="showLinkAnalysisTool"
-            key="linkage"
-            class="map-toolbar__tab"
-            type="button"
-            title="链路分析"
-            :disabled="pickLocked"
-            :class="{ 'is-active': activeWorkflow === 'linkage' }"
-            @click="openLinkAnalysis"
-          >
-            <span class="material-symbols-outlined">analytics</span>
-            <span class="map-toolbar__tab-label">链路分析</span>
+            <span class="map-toolbar__tab-label">链路计算</span>
           </button>
 
           <button
@@ -118,13 +104,13 @@
             key="coverage"
             class="map-toolbar__tab"
             type="button"
-            title="区域覆盖计算适配"
+            title="区域覆盖"
             :disabled="pickLocked"
             :class="{ 'is-active': activeWorkflow === 'coverage' }"
             @click="openCoverage"
           >
             <span class="material-symbols-outlined">grid_on</span>
-            <span class="map-toolbar__tab-label">覆盖</span>
+            <span class="map-toolbar__tab-label">区域覆盖</span>
           </button>
 
           <button
@@ -132,13 +118,13 @@
             key="prediction"
             class="map-toolbar__tab"
             type="button"
-            title="传输损耗预测"
+            title="损耗计算"
             :disabled="pickLocked"
             :class="{ 'is-active': activeWorkflow === 'prediction' }"
             @click="openPrediction"
           >
             <span class="material-symbols-outlined">wifi_tethering</span>
-            <span class="map-toolbar__tab-label">损耗</span>
+            <span class="map-toolbar__tab-label">损耗计算</span>
           </button>
 
           <button
@@ -146,13 +132,13 @@
             key="cluster"
             class="map-toolbar__tab"
             type="button"
-            title="聚类分析及站点推荐"
+            title="聚类分析"
             :disabled="pickLocked"
             :class="{ 'is-active': activeWorkflow === 'cluster' }"
             @click="openCluster"
           >
             <span class="material-symbols-outlined">scatter_plot</span>
-            <span class="map-toolbar__tab-label">聚类</span>
+            <span class="map-toolbar__tab-label">聚类分析</span>
           </button>
         </TransitionGroup>
       </nav>
@@ -175,25 +161,25 @@
         <button
           class="map-toolbar__tab"
           type="button"
-          title="测距"
+          title="测量长度"
           :disabled="pickLocked"
           :class="{ 'is-active': measureMode === 'distance' }"
           @click="toggleMeasureDistance"
         >
           <span class="material-symbols-outlined">straighten</span>
-          <span class="map-toolbar__tab-label">测距</span>
+          <span class="map-toolbar__tab-label">测量长度</span>
         </button>
 
         <button
           class="map-toolbar__tab"
           type="button"
-          title="测面"
+          title="测量面积"
           :disabled="pickLocked"
           :class="{ 'is-active': measureMode === 'area' }"
           @click="toggleMeasureArea"
         >
           <span class="material-symbols-outlined">square_foot</span>
-          <span class="map-toolbar__tab-label">测面</span>
+          <span class="map-toolbar__tab-label">测量面积</span>
         </button>
       </nav>
 
@@ -388,7 +374,6 @@ const wsConnected = ref(false);
 
 const showCoreTools = computed(() => projectOpen.value || railFull.value);
 const showProfileTool = computed(() => profileReady.value || railFull.value);
-const showLinkAnalysisTool = computed(() => linkAnalysisReady.value || railFull.value);
 const showAnalysisTools = computed(() => stationReady.value || railFull.value);
 
 const colRef = ref<HTMLElement | null>(null);
@@ -565,7 +550,7 @@ const burstColHeight = async () => {
   colPhase.value = "idle";
 };
 
-watch([showCoreTools, showProfileTool, showLinkAnalysisTool, showAnalysisTools], () => {
+watch([showCoreTools, showProfileTool, showAnalysisTools], () => {
   burstColHeight();
 });
 
@@ -711,19 +696,12 @@ const openSLP = () => {
   emitOnHome("openSLPComputedDialog");
 };
 
-const openProfile = () => {
+const openLinkCompute = () => {
   if (pickLocked.value || profileLoading.value) return;
   if (!profileReady.value && !railFull.value) return;
   closeProjectList();
   activeWorkflow.value = "profile";
   emitOnHome("openProfileExtract");
-};
-
-const openLinkAnalysis = () => {
-  if (pickLocked.value || (!linkAnalysisReady.value && !railFull.value)) return;
-  closeProjectList();
-  activeWorkflow.value = "linkage";
-  emitOnHome("openLinkAnalysis");
 };
 
 const openCoverage = () => {
@@ -762,7 +740,7 @@ const toggleMeasureDistance = async () => {
   }
   measureTool.clear();
   measureMode.value = "distance";
-  ElMessage.info("开始测距，右键或双击结束；再次点击按钮可清除");
+  ElMessage.info("开始测量长度，右键或双击结束；再次点击按钮可清除");
   try {
     await measureTool.distance();
   } catch {
@@ -781,7 +759,7 @@ const toggleMeasureArea = async () => {
   }
   measureTool.clear();
   measureMode.value = "area";
-  ElMessage.info("开始测面，左键加点，右键或双击结束；再次点击按钮可清除");
+  ElMessage.info("开始测量面积，左键加点，右键或双击结束；再次点击按钮可清除");
   try {
     await measureTool.area();
   } catch {
@@ -857,7 +835,7 @@ const onStationReady = (ready: boolean) => {
     if (!railFull.value) activeWorkflow.value = "";
   }
   if (unlocked && !railFull.value) {
-    ElMessage.info("发射点就绪，可进行覆盖 / 损耗 / 聚类分析");
+    ElMessage.info("发射点就绪，可进行区域覆盖 / 损耗计算 / 聚类分析");
   }
 };
 
@@ -870,7 +848,7 @@ const onProfileReady = (ready: boolean) => {
   const unlocked = next && !profileReady.value;
   profileReady.value = next;
   if (unlocked && !railFull.value) {
-    ElMessage.info("收发点就绪，可进行剖面提取");
+    ElMessage.info("收发点就绪，可进行链路计算");
   }
 };
 
@@ -879,7 +857,7 @@ const onLinkAnalysisReady = (ready: boolean) => {
   const unlocked = next && !linkAnalysisReady.value;
   linkAnalysisReady.value = next;
   if (unlocked && !railFull.value) {
-    ElMessage.info("剖面完成，可进行链路分析");
+    ElMessage.info("链路计算完成");
   }
 };
 
@@ -1644,7 +1622,7 @@ onUnmounted(() => {
 
     &::-webkit-scrollbar-thumb {
       border-radius: 999px;
-      background: rgba(255, 255, 255, 0.18);
+      background: rgba(157, 223, 46, 0.55);
     }
   }
 
@@ -2041,7 +2019,7 @@ onUnmounted(() => {
 
     &::-webkit-scrollbar-thumb {
       border-radius: 999px;
-      background: rgba(157, 223, 46, 0.35);
+      background: rgba(157, 223, 46, 0.55);
     }
   }
 

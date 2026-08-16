@@ -52,6 +52,7 @@
           <el-table
             v-loading="loading"
             :data="tableData"
+            :max-height="tableMaxHeight"
             @selection-change="handleSelectionChange"
             style="width: 100%"
             header-row-class-name="results-table-header"
@@ -115,7 +116,7 @@
 <script lang="ts" setup>
 //@ts-nocheck
 
-import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { listProjects, deleteProject } from "@/request/sitePlanting";
 import { useRouter } from "vue-router";
@@ -124,7 +125,7 @@ const router = useRouter();
 const queryField = ref<"name" | "user">("name");
 const keyword = ref("");
 
-let tableData: any = reactive([]);
+const tableData = ref<any[]>([]);
 const loading = ref(false);
 const ids = ref<number[]>([]);
 const multiple = ref(true);
@@ -134,6 +135,11 @@ const panelPos = ref({ x: 24, y: 72 });
 const dragging = ref(false);
 const dragOffset = ref({ x: 0, y: 0 });
 const PANEL_WIDTH = 1280;
+const tableMaxHeight = ref(Math.max(280, Math.min(480, window.innerHeight - 300)));
+
+const updateTableMaxHeight = () => {
+  tableMaxHeight.value = Math.max(280, Math.min(480, window.innerHeight - 300));
+};
 
 const panelStyle = computed(() => ({
   left: `${panelPos.value.x}px`,
@@ -213,19 +219,27 @@ const isoToNormalTime = (isoTime) => {
 const getList = async () => {
   loading.value = true;
   try {
-    const params: Record<string, any> = { page: 1, page_size: 1000 };
+    const all: any[] = [];
+    let page = 1;
     const text = keyword.value.trim();
-    if (text) {
-      if (queryField.value === "user") params.user__username = text;
-      else params.search = text;
+    while (page <= 50) {
+      const params: Record<string, any> = { page, page_size: 100 };
+      if (text) {
+        if (queryField.value === "user") params.user__username = text;
+        else params.search = text;
+      }
+      const res: any = await listProjects(params);
+      const batch = Array.isArray(res) ? res : res?.results || [];
+      all.push(...batch);
+      if (Array.isArray(res) || !res?.next || !batch.length) break;
+      page += 1;
     }
-    const res: any = await listProjects(params);
-    tableData = Array.isArray(res) ? res : res.results || [];
-    tableData.forEach((item: any) => {
+    all.forEach((item: any) => {
       item.updated_at = isoToNormalTime(item.updated_at);
     });
+    tableData.value = all;
   } catch (error) {
-    // ElMessage.error("加载失败");
+    tableData.value = [];
   } finally {
     loading.value = false;
   }
@@ -279,11 +293,14 @@ const tableRowClassName = ({ rowIndex }: { rowIndex: number }) => {
 onMounted(() => {
   getList();
   centerPanel();
+  updateTableMaxHeight();
+  window.addEventListener("resize", updateTableMaxHeight);
   window.addEventListener("keydown", onEsc);
 });
 
 onBeforeUnmount(() => {
   stopDrag();
+  window.removeEventListener("resize", updateTableMaxHeight);
   window.removeEventListener("keydown", onEsc);
 });
 </script>

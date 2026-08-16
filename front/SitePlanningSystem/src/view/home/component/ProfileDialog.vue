@@ -1,9 +1,11 @@
 <template>
+  <teleport to="body">
   <transition name="station-fade">
     <div
       v-if="visible"
       ref="panelRef"
       class="station-config"
+      :class="{ 'is-wide': detailsOpen, 'is-resizing': layoutAnimating }"
       :style="panelStyle"
     >
       <div class="station-config__panel">
@@ -19,8 +21,8 @@
               </svg>
             </div>
             <div>
-              <h2 class="station-config__title">剖面洞察</h2>
-              <p class="station-config__subtitle">Terrain profile and link quality overview.</p>
+              <h2 class="station-config__title">链路计算</h2>
+              <p class="station-config__subtitle">{{ detailsOpen ? "剖面与单链路详情" : "地形剖面与链路质量概览" }}</p>
             </div>
           </div>
           <button
@@ -42,7 +44,7 @@
           </button>
         </div>
 
-        <div class="station-config__body">
+        <div class="station-config__body" :class="{ 'is-split': detailsOpen }">
           <section class="insight-card" v-loading="loading">
             <div class="insight-stats">
               <div class="insight-stat">
@@ -145,34 +147,165 @@
               </div>
             </div>
           </section>
+
+          <aside v-if="detailsOpen" class="insight-details">
+            <el-form :model="form" label-position="top" class="insight-details__form">
+              <div class="insight-section-head">
+                <h3>单链路输入</h3>
+              </div>
+              <div class="insight-details__grid">
+                <el-form-item label="通信速率">
+                  <el-select
+                    v-model="form.comm_rate"
+                    placeholder="请选择"
+                    popper-class="station-config-select-dropdown"
+                    @change="$emit('changeCommRate', $event)"
+                  >
+                    <el-option v-for="item in commRateOptions" :key="item" :label="item" :value="item" />
+                  </el-select>
+                </el-form-item>
+                <el-form-item label="调整系数">
+                  <el-input :model-value="display(form.diversity_order)" readonly />
+                </el-form-item>
+                <el-form-item label="发射天线增益">
+                  <el-input :model-value="display(form.tx_gain)" readonly>
+                    <template #suffix><span class="insight-details__unit">dB</span></template>
+                  </el-input>
+                </el-form-item>
+                <el-form-item label="接收天线增益">
+                  <el-input :model-value="display(form.rx_gain)" readonly>
+                    <template #suffix><span class="insight-details__unit">dB</span></template>
+                  </el-input>
+                </el-form-item>
+                <el-form-item label="信号频率">
+                  <el-input :model-value="display(form.freq)" readonly>
+                    <template #suffix><span class="insight-details__unit">MHz</span></template>
+                  </el-input>
+                </el-form-item>
+                <el-form-item label="发射功率">
+                  <el-input :model-value="display(form.trans_power)" readonly>
+                    <template #suffix><span class="insight-details__unit">W</span></template>
+                  </el-input>
+                </el-form-item>
+                <el-form-item label="发射经度">
+                  <el-input :model-value="displayLng(form.lng)" readonly />
+                </el-form-item>
+                <el-form-item label="发射纬度">
+                  <el-input :model-value="displayLat(form.lat)" readonly />
+                </el-form-item>
+                <el-form-item label="接收经度">
+                  <el-input :model-value="displayLng(rxLng)" readonly />
+                </el-form-item>
+                <el-form-item label="接收纬度">
+                  <el-input :model-value="displayLat(rxLat)" readonly />
+                </el-form-item>
+              </div>
+
+              <div class="insight-section-head">
+                <h3>单链路输出</h3>
+              </div>
+              <div class="insight-details__grid">
+                <el-form-item label="通信距离">
+                  <el-input :model-value="display(form.distance)" readonly>
+                    <template #suffix><span class="insight-details__unit">km</span></template>
+                  </el-input>
+                </el-form-item>
+                <el-form-item label="散射角">
+                  <el-input :model-value="display(form.theta_scatter)" readonly>
+                    <template #suffix><span class="insight-details__unit">°</span></template>
+                  </el-input>
+                </el-form-item>
+                <el-form-item label="区域类型">
+                  <el-input :model-value="display(form.area)" readonly />
+                </el-form-item>
+                <el-form-item label="链路传播可靠度">
+                  <el-input :model-value="display(form.reliability)" readonly>
+                    <template #suffix><span class="insight-details__unit">%</span></template>
+                  </el-input>
+                </el-form-item>
+                <el-form-item label="发射天线仰角">
+                  <el-input :model-value="display(form.tx_theta)" readonly>
+                    <template #suffix><span class="insight-details__unit">°</span></template>
+                  </el-input>
+                </el-form-item>
+                <el-form-item label="发射点障碍物距离">
+                  <el-input :model-value="display(form.tx_barrier_distance)" readonly>
+                    <template #suffix><span class="insight-details__unit">km</span></template>
+                  </el-input>
+                </el-form-item>
+                <el-form-item label="路径损耗中值">
+                  <el-input :model-value="display(form.median_loss)" readonly>
+                    <template #suffix><span class="insight-details__unit">dB</span></template>
+                  </el-input>
+                </el-form-item>
+                <el-form-item label="接收天线仰角">
+                  <el-input :model-value="display(form.rx_theta)" readonly>
+                    <template #suffix><span class="insight-details__unit">°</span></template>
+                  </el-input>
+                </el-form-item>
+                <el-form-item label="接收点障碍物距离">
+                  <el-input :model-value="display(form.rx_barrier_distance)" readonly>
+                    <template #suffix><span class="insight-details__unit">km</span></template>
+                  </el-input>
+                </el-form-item>
+                <el-form-item label="接收功率">
+                  <el-input :model-value="display(form.recv_power)" readonly>
+                    <template #suffix><span class="insight-details__unit">dBm</span></template>
+                  </el-input>
+                </el-form-item>
+                <el-form-item label="发射天线方位角">
+                  <el-input :model-value="display(form.tx_azimuth)" readonly>
+                    <template #suffix><span class="insight-details__unit">°</span></template>
+                  </el-input>
+                </el-form-item>
+                <el-form-item label="发射点障碍物高差">
+                  <el-input :model-value="display(form.tx_barrier_height)" readonly>
+                    <template #suffix><span class="insight-details__unit">m</span></template>
+                  </el-input>
+                </el-form-item>
+                <el-form-item label="信号衰落余值">
+                  <el-input :model-value="display(form.residual_value)" readonly>
+                    <template #suffix><span class="insight-details__unit">dB</span></template>
+                  </el-input>
+                </el-form-item>
+                <el-form-item label="接收天线方位角">
+                  <el-input :model-value="display(form.rx_azimuth)" readonly>
+                    <template #suffix><span class="insight-details__unit">°</span></template>
+                  </el-input>
+                </el-form-item>
+                <el-form-item label="接收点障碍物高差">
+                  <el-input :model-value="display(form.rx_barrier_height)" readonly>
+                    <template #suffix><span class="insight-details__unit">m</span></template>
+                  </el-input>
+                </el-form-item>
+              </div>
+            </el-form>
+          </aside>
         </div>
 
-        <div class="station-config__footer">
-          <button class="station-config__btn station-config__btn--ghost" type="button" @click="setVisible(false)">
-            取消
+        <div class="station-config__footer station-config__footer--split">
+          <button class="station-config__btn station-config__btn--ghost" type="button" @click="$emit('export')">
+            导出
           </button>
-          <button class="station-config__btn station-config__btn--primary" type="button" @click="handleConfirm">
-            确认
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="M9.5 6.5 15.5 12l-6 5.5"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </button>
+          <div class="station-config__footer-right">
+            <button class="station-config__btn station-config__btn--ghost" type="button" @click="toggleDetails">
+              {{ detailsOpen ? "收起" : "详情" }}
+            </button>
+            <button class="station-config__btn station-config__btn--primary" type="button" @click="setVisible(false)">
+              关闭
+            </button>
+          </div>
         </div>
       </div>
     </div>
   </transition>
+  </teleport>
 </template>
 
 <script lang="ts" setup>
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import * as echarts from "echarts";
+import { formatLongitude, formatLatitude } from "@/view/home/service/rules";
 
 const props = defineProps({
   visible: {
@@ -191,22 +324,51 @@ const props = defineProps({
     type: Object,
     default: () => ({}),
   },
+  form: {
+    type: Object,
+    default: () => ({}),
+  },
+  rxLng: {
+    type: [String, Number],
+    default: "",
+  },
+  rxLat: {
+    type: [String, Number],
+    default: "",
+  },
 });
 
-const emit = defineEmits(["update:visible", "confirm"]);
+const emit = defineEmits(["update:visible", "export", "changeCommRate"]);
+
+const commRateOptions = [
+  "2.4kbps", "9.6kbps", "32kbps", "64kbps", "128kbps", "256kbps", "512kbps",
+  "1024kbps", "2Mbps", "4Mbps", "8Mbps", "16Mbps", "34Mbps", "50Mbps",
+  "78Mbps", "100Mbps", "155Mbps",
+];
 
 const panelRef = ref<HTMLElement | null>(null);
 const chartRef = ref<HTMLElement | null>(null);
 const panelPos = ref({ x: 0, y: 0 });
 const dragging = ref(false);
 const dragOffset = ref({ x: 0, y: 0 });
+const detailsOpen = ref(false);
+const layoutAnimating = ref(false);
 const PANEL_WIDTH = 800;
+const DETAILS_WIDTH = 720;
+const LAYOUT_MS = 280;
+let layoutAnimTimer: ReturnType<typeof setTimeout> | null = null;
 let chart: echarts.ECharts | null = null;
+let chartResizeObs: ResizeObserver | null = null;
+
+const currentWidth = () => {
+  const width = detailsOpen.value ? PANEL_WIDTH + DETAILS_WIDTH : PANEL_WIDTH;
+  return Math.min(width, window.innerWidth - 48);
+};
 
 const panelStyle = computed(() => ({
   left: `${panelPos.value.x}px`,
   top: `${panelPos.value.y}px`,
-  width: `${Math.min(PANEL_WIDTH, window.innerWidth - 48)}px`,
+  width: `${currentWidth()}px`,
 }));
 
 const toNum = (value: any) => {
@@ -284,13 +446,81 @@ const fmt = (value: any, digits = 0) => {
   return digits ? num.toFixed(digits) : String(Math.round(num));
 };
 
+const display = (val: unknown) => (val === null || val === undefined ? "" : String(val));
+
+const displayLng = (val: unknown) => {
+  if (val === null || val === undefined || val === "") return "";
+  const s = String(val);
+  if (/[EW°]/.test(s)) return s;
+  return formatLongitude(val as any);
+};
+
+const displayLat = (val: unknown) => {
+  if (val === null || val === undefined || val === "") return "";
+  const s = String(val);
+  if (/[NS°]/.test(s)) return s;
+  return formatLatitude(val as any);
+};
+
 const getDefaultPanelPos = (size?: { width: number; height: number }) => {
-  const width = size?.width ?? Math.min(PANEL_WIDTH, window.innerWidth - 48);
+  const width = size?.width ?? currentWidth();
   const height = size?.height ?? 640;
   return {
     x: Math.max(24, Math.round((window.innerWidth - width) / 2)),
     y: Math.max(24, Math.round((window.innerHeight - height) / 2)),
   };
+};
+
+const clampPanelPos = () => {
+  const width = currentWidth();
+  const maxX = Math.max(0, window.innerWidth - width);
+  const maxY = Math.max(0, window.innerHeight - 80);
+  panelPos.value = {
+    x: Math.min(maxX, Math.max(0, panelPos.value.x)),
+    y: Math.min(maxY, Math.max(0, panelPos.value.y)),
+  };
+};
+
+const resizeChart = () => {
+  const el = chartRef.value;
+  if (!chart || !el) return;
+  const width = Math.max(1, el.clientWidth);
+  const height = Math.max(1, el.clientHeight);
+  chart.resize({ width, height });
+};
+
+const unbindChartResize = () => {
+  chartResizeObs?.disconnect();
+  chartResizeObs = null;
+};
+
+const bindChartResize = () => {
+  unbindChartResize();
+  const el = chartRef.value;
+  if (!el || typeof ResizeObserver === "undefined") return;
+  chartResizeObs = new ResizeObserver(() => resizeChart());
+  chartResizeObs.observe(el);
+};
+
+const toggleDetails = () => {
+  const next = !detailsOpen.value;
+  const nextWidth = Math.min(next ? PANEL_WIDTH + DETAILS_WIDTH : PANEL_WIDTH, window.innerWidth - 48);
+  const height = panelRef.value?.offsetHeight || 640;
+  const target = getDefaultPanelPos({ width: nextWidth, height });
+  if (layoutAnimTimer) {
+    clearTimeout(layoutAnimTimer);
+    layoutAnimTimer = null;
+  }
+  layoutAnimating.value = true;
+  requestAnimationFrame(() => {
+    detailsOpen.value = next;
+    panelPos.value = target;
+  });
+  layoutAnimTimer = window.setTimeout(() => {
+    layoutAnimating.value = false;
+    layoutAnimTimer = null;
+    resizeChart();
+  }, LAYOUT_MS);
 };
 
 const centerPanel = async () => {
@@ -304,6 +534,7 @@ const centerPanel = async () => {
 
 const startDrag = (e: MouseEvent) => {
   if (e.button !== 0) return;
+  layoutAnimating.value = false;
   dragging.value = true;
   dragOffset.value = {
     x: e.clientX - panelPos.value.x,
@@ -315,7 +546,7 @@ const startDrag = (e: MouseEvent) => {
 
 const onDrag = (e: MouseEvent) => {
   if (!dragging.value) return;
-  const width = Math.min(PANEL_WIDTH, window.innerWidth - 48);
+  const width = currentWidth();
   const maxX = Math.max(0, window.innerWidth - width);
   const maxY = Math.max(0, window.innerHeight - 80);
   panelPos.value = {
@@ -331,6 +562,7 @@ const stopDrag = () => {
 };
 
 const disposeChart = () => {
+  unbindChartResize();
   chart?.dispose();
   chart = null;
 };
@@ -345,7 +577,13 @@ const renderChart = async () => {
   if (chart && chart.getDom() !== el) {
     disposeChart();
   }
-  if (!chart) chart = echarts.init(el);
+  if (!chart) {
+    chart = echarts.init(el, undefined, {
+      width: Math.max(1, el.clientWidth),
+      height: Math.max(1, el.clientHeight),
+    });
+    bindChartResize();
+  }
   if (!chart) return;
 
   const samples = denseSamples.value;
@@ -454,17 +692,19 @@ const renderChart = async () => {
       },
     ],
   }, { notMerge: true });
-  chart.resize();
-  requestAnimationFrame(() => chart?.resize());
+  resizeChart();
+  bindChartResize();
 };
 
 watch(
   () => props.visible,
   async (val) => {
     if (val) {
+      detailsOpen.value = false;
       await centerPanel();
       await renderChart();
     } else {
+      detailsOpen.value = false;
       disposeChart();
     }
   }
@@ -482,11 +722,8 @@ const setVisible = (val: boolean) => {
   emit("update:visible", val);
 };
 
-const handleConfirm = () => {
-  emit("confirm");
-};
-
 onBeforeUnmount(() => {
+  if (layoutAnimTimer) clearTimeout(layoutAnimTimer);
   stopDrag();
   disposeChart();
 });
@@ -495,15 +732,25 @@ onBeforeUnmount(() => {
 <style lang="scss" scoped>
 .station-config {
   position: fixed;
-  z-index: 1200;
+  z-index: 2400;
   width: min(800px, calc(100vw - 48px));
   pointer-events: all;
   box-sizing: border-box;
+  transition: none;
+
+  &.is-wide {
+    width: min(1520px, calc(100vw - 48px));
+  }
+
+  &.is-resizing {
+    transition: width 0.28s ease, left 0.28s ease, top 0.28s ease;
+  }
 
   &__panel {
     position: relative;
     display: flex;
     flex-direction: column;
+    max-height: calc(100vh - 48px);
     padding: 0;
     overflow: hidden;
     border-radius: 0.75rem;
@@ -612,9 +859,22 @@ onBeforeUnmount(() => {
   }
 
   &__body {
+    flex: 1 1 auto;
+    min-height: 0;
     padding: 20px 24px;
     max-height: min(70vh, 720px);
-    overflow: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+
+    &.is-split {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      padding: 0;
+      height: min(76vh, 820px);
+      max-height: min(76vh, 820px);
+      overflow: hidden;
+    }
   }
 
   &__footer {
@@ -629,6 +889,16 @@ onBeforeUnmount(() => {
     padding: 16px 24px !important;
     border-top: 1px solid rgba(64, 73, 69, 0.2) !important;
     background: rgba(45, 55, 49, 0.3) !important;
+
+    &--split {
+      justify-content: space-between;
+    }
+  }
+
+  &__footer-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
   }
 
   &__btn {
@@ -686,6 +956,87 @@ onBeforeUnmount(() => {
   padding: 0;
   background: transparent;
   border: none;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.station-config__body.is-split .insight-card {
+  flex: 1 1 760px;
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  padding: 20px 24px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.insight-details {
+  flex: 1 1 640px;
+  width: auto;
+  min-width: 420px;
+  max-width: 760px;
+  min-height: 0;
+  padding: 20px 24px 28px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border-left: 1px solid rgba(64, 73, 69, 0.28);
+  background: rgba(7, 16, 11, 0.35);
+  box-sizing: border-box;
+  scrollbar-gutter: stable;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(157, 223, 46, 0.55);
+    border-radius: 999px;
+  }
+
+  &__form {
+    :deep(.el-form-item) {
+      margin-bottom: 10px;
+    }
+
+    :deep(.el-form-item__label) {
+      font-family: Inter, "Noto Sans SC", sans-serif !important;
+      font-size: 12px !important;
+      font-weight: 500 !important;
+      line-height: 16px;
+      color: #c0c8c3 !important;
+      margin-bottom: 4px;
+    }
+
+    :deep(.el-input__wrapper),
+    :deep(.el-select__wrapper) {
+      background: #07100b;
+      box-shadow: none;
+      border: 1px solid rgba(64, 73, 69, 0.55);
+      border-radius: 8px;
+    }
+
+    :deep(.el-input__inner),
+    :deep(.el-select__selected-item) {
+      color: #ffffff;
+      font-size: 12px;
+    }
+
+    :deep(.el-input.is-disabled .el-input__wrapper) {
+      background: #07100b;
+    }
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 16px;
+  }
+
+  &__unit {
+    color: #8b8790;
+    font-size: 11px;
+  }
 }
 
 .insight-stats {
@@ -762,10 +1113,19 @@ onBeforeUnmount(() => {
 
 .insight-chart {
   width: 100%;
+  max-width: 100%;
   height: 180px;
   border-radius: 0.5rem;
   background: #07100b;
   border: 1px solid rgba(64, 73, 69, 0.5);
+  overflow: hidden;
+  box-sizing: border-box;
+
+  :deep(> div) {
+    width: 100% !important;
+    height: 100% !important;
+    overflow: hidden;
+  }
 }
 
 .insight-image {
@@ -796,10 +1156,10 @@ onBeforeUnmount(() => {
   flex-wrap: wrap;
   gap: 10px 14px;
   margin-top: 10px;
+  max-width: 100%;
   font-family: Inter, "Noto Sans SC", sans-serif;
   font-size: 11px;
   color: #c0c8c3;
-  white-space: nowrap;
 
   .dot {
     width: 7px;
@@ -833,9 +1193,10 @@ onBeforeUnmount(() => {
 
   &__row {
     display: grid;
-    grid-template-columns: 72px 1fr 80px;
+    grid-template-columns: 72px minmax(0, 1fr) 80px;
     align-items: center;
     gap: 10px;
+    min-width: 0;
     font-family: Inter, "Noto Sans SC", sans-serif;
     font-size: 12px;
     color: #c0c8c3;
@@ -906,7 +1267,6 @@ onBeforeUnmount(() => {
     font-family: Inter, "Noto Sans SC", sans-serif;
     font-size: 12px;
     color: #dae5dc;
-    white-space: nowrap;
   }
 }
 
