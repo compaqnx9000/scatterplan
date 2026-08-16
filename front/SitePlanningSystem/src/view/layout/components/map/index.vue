@@ -138,7 +138,7 @@ onBeforeUnmount(() => {
     min-height: 48px;
     padding: 8px 14px;
     border-radius: 12px;
-    background: rgba(26, 34, 44, 0.72);
+    background: rgba(24, 26, 24, 0.82);
     border: 1px solid rgba(180, 200, 220, 0.18);
     box-shadow:
         0 18px 48px rgba(0, 0, 0, 0.38),

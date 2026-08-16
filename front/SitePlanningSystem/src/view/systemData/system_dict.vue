@@ -11,17 +11,6 @@
           </button>
         </div>
 
-        <div class="results-panel__toolbar">
-          <label class="results-panel__field">
-            <span>字典名称</span>
-            <el-input v-model="queryParams.search" placeholder="请输入字典名称" clearable />
-          </label>
-          <div class="results-panel__actions">
-            <button class="results-panel__btn results-panel__btn--ghost" type="button" @click="handleReset">重置</button>
-            <button class="results-panel__btn results-panel__btn--primary" type="button" @click="handleSearch">查询</button>
-          </div>
-        </div>
-
         <div class="results-panel__section-head">
           <h3 class="results-panel__card-title">字典列表</h3>
         </div>
@@ -60,17 +49,30 @@
           </el-table>
         </div>
 
-        <div class="results-panel__footer">
-          <el-pagination
-            background
-            @size-change="handleSizeChange"
-            @current-change="handleCurrentChange"
-            :current-page="queryParams.page"
-            :page-sizes="[10, 20, 50, 100]"
-            layout="total, prev, pager, next, jumper"
-            :total="total"
-          />
+        <div class="results-panel__footer results-panel__footer--split">
+          <button class="results-panel__btn results-panel__btn--ghost" type="button" @click="triggerImport">导入</button>
+          <button class="results-panel__btn results-panel__btn--primary" type="button" @click="handleClose">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M5.4 12.4 10 17l8.6-9.2"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            确认
+          </button>
         </div>
+
+        <input
+          ref="importInputRef"
+          type="file"
+          accept=".json,.csv,.xlsx,.xls"
+          class="results-panel__file-input"
+          @change="handleImportFile"
+        />
 
         <div v-if="showEditDialog" class="results-panel__sub">
           <div class="results-panel__sub-card">
@@ -108,54 +110,26 @@
 //@ts-nocheck
 
 import { onMounted, reactive, ref } from "vue";
-import { ElMessage, ElMessageBox } from "element-plus";
-import { listUser, delUser, updateUser } from "@/request/system_user";
+import { ElMessage } from "element-plus";
 import { formatDecimal6, useGothamPanel } from "./useGothamPanel";
 
 const { panelRef, panelStyle, startDrag, handleClose } = useGothamPanel(1100);
 
-const queryParams = ref({
-  page: 1,
-  search: "",
-});
-
 let tableData: any = reactive([]);
-const total = ref(0);
 const loading = ref(false);
 const ids = ref<number[]>([]);
 const multiple = ref(true);
+const importInputRef = ref<HTMLInputElement | null>(null);
 
 const getList = async () => {
   loading.value = true;
   try {
-    const res: any = await listUser(queryParams.value);
-    tableData = res.results || [];
-    total.value = res.count || 0;
+    // 字典表尚未落地，勿再调用用户接口
+    tableData = [];
   } catch (error) {
   } finally {
     loading.value = false;
   }
-};
-
-const handleSizeChange = (val: number) => {
-  queryParams.value.page = val;
-  getList();
-};
-
-const handleCurrentChange = (val: number) => {
-  queryParams.value.page = val;
-  getList();
-};
-
-const handleSearch = () => {
-  queryParams.value.page = 1;
-  getList();
-};
-
-const handleReset = () => {
-  queryParams.value.search = "";
-  queryParams.value.page = 1;
-  getList();
 };
 
 const handleSelectionChange = (selection: any[]) => {
@@ -188,35 +162,24 @@ const handleEdit = (row: any) => {
 };
 
 const handleConfirmEdit = async () => {
-  if (dialogStatus.value === "查看") {
-    showEditDialog.value = false;
-    return;
-  }
-  try {
-    await updateUser(editForm.value);
-    ElMessage.success("编辑成功");
-    showEditDialog.value = false;
-    getList();
-  } catch (error) {}
+  showEditDialog.value = false;
 };
 
 const handleDelete = (row?: any) => {
-  const deleteIds = row ? [row.id] : ids.value;
-  ElMessageBox.confirm("确认删除选中数据?", "警告", {
-    confirmButtonText: "确定",
-    cancelButtonText: "取消",
-    type: "warning",
-    customClass: "gotham-message-box",
-  })
-    .then(() => {
-      delUser(deleteIds)
-        .then(() => {
-          ElMessage.success("删除成功");
-          getList();
-        })
-        .catch(() => {});
-    })
-    .catch(() => {});
+  ElMessage.warning("数据字典尚未接入，删除不会生效（也不会再删除用户）");
+};
+
+const triggerImport = () => {
+  importInputRef.value?.click();
+};
+
+const handleImportFile = (e: Event) => {
+  const input = e.target as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = "";
+  if (!file) return;
+  // 字典导入接口尚未落地，先保留选文件入口
+  ElMessage.info(`已选择文件：${file.name}（导入功能待接入）`);
 };
 
 const tableRowClassName = ({ rowIndex }: { rowIndex: number }) => {
@@ -230,4 +193,8 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 @import "@/styles/gotham-panel.scss";
+
+.results-panel__file-input {
+  display: none;
+}
 </style>

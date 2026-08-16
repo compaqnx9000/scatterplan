@@ -13,21 +13,21 @@
             <path
               d="M12 2.5v4.2"
               fill="none"
-              stroke="#7ec8ff"
+              stroke="#bef264"
               stroke-width="1.8"
               stroke-linecap="round"
             />
             <path
               d="M8.2 4.2c2.1 1.4 5.5 1.4 7.6 0"
               fill="none"
-              stroke="#7ec8ff"
+              stroke="#bef264"
               stroke-width="1.6"
               stroke-linecap="round"
             />
             <path
               d="M6.2 6.4c3.2 2.1 8.4 2.1 11.6 0"
               fill="none"
-              stroke="#7ec8ff"
+              stroke="#bef264"
               stroke-width="1.6"
               stroke-linecap="round"
             />
@@ -150,6 +150,25 @@
             <div class="app-header__menu-divider"></div>
 
             <div class="app-header__menu-list">
+              <button class="app-header__menu-item" type="button" @click="goSitePlanning">
+                <span class="app-header__menu-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path
+                      d="M5 6.5h14M5 12h14M5 17.5h9"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </span>
+                <span>站点规划结果</span>
+              </button>
+            </div>
+
+            <div class="app-header__menu-divider"></div>
+
+            <div class="app-header__menu-list">
               <button class="app-header__menu-item app-header__menu-item--danger" type="button" @click="handleLogout">
                 <span class="app-header__menu-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24">
@@ -251,6 +270,12 @@ function goHome() {
   router.push("/");
 }
 
+function goSitePlanning() {
+  if (pickLocked.value) return;
+  closeProfile();
+  router.push("/sitePlanning/sitePlanning");
+}
+
 function subMenuClick(val: any) {
   if (pickLocked.value) return;
   subMenuActive.value = val.value;
@@ -341,7 +366,7 @@ onUnmounted(() => {
     gap: 18px;
     padding: 10px 18px;
     border-radius: 999px;
-    background: rgba(26, 34, 44, 0.72);
+    background: rgba(24, 26, 24, 0.82);
     border: 1px solid rgba(180, 200, 220, 0.18);
     box-shadow:
       0 18px 48px rgba(0, 0, 0, 0.38),
@@ -401,7 +426,7 @@ onUnmounted(() => {
     letter-spacing: 0.01em;
 
     span {
-      color: #7ec8ff;
+      color: #bef264;
       font-weight: 600;
       margin-left: 0;
     }
@@ -439,8 +464,8 @@ onUnmounted(() => {
     min-height: 36px;
     padding: 4px 14px;
     border-radius: 999px;
-    background: rgba(0, 162, 255, 0.12);
-    border: 1px solid rgba(0, 162, 255, 0.28);
+    background: rgba(163, 230, 53, 0.12);
+    border: 1px solid rgba(163, 230, 53, 0.28);
     color: #fff;
   }
 
@@ -454,7 +479,7 @@ onUnmounted(() => {
   &__project-name {
     font-size: 12px;
     font-weight: 600;
-    color: #e8f4ff;
+    color: #ecfccb;
     max-width: 140px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -520,18 +545,18 @@ onUnmounted(() => {
   }
 
   &__menu {
-    --gotham-bg: #07090c;
-    --gotham-bg-elevated: #0d1117;
-    --gotham-panel: rgba(10, 14, 20, 0.92);
-    --gotham-panel-solid: #0f141c;
-    --gotham-border: rgba(232, 226, 210, 0.12);
-    --gotham-border-strong: rgba(232, 226, 210, 0.22);
-    --gotham-text: #e8e2d2;
-    --gotham-text-muted: #8b8790;
-    --gotham-text-dim: #5c5863;
-    --gotham-accent: #d4a017;
-    --gotham-accent-soft: rgba(212, 160, 23, 0.15);
-    --gotham-accent-hover: #e8b52a;
+    --gotham-bg: #121412;
+    --gotham-bg-elevated: #181a18;
+    --gotham-panel: rgba(24, 26, 24, 0.92);
+    --gotham-panel-solid: #1a1d1a;
+    --gotham-border: rgba(255, 255, 255, 0.08);
+    --gotham-border-strong: rgba(255, 255, 255, 0.16);
+    --gotham-text: #ffffff;
+    --gotham-text-muted: #9ca3af;
+    --gotham-text-dim: #6b7280;
+    --gotham-accent: #a3e635;
+    --gotham-accent-soft: rgba(163, 230, 53, 0.16);
+    --gotham-accent-hover: #b6f04a;
     --gotham-danger: #c45c4a;
     --font-mono: 'IBM Plex Mono', 'Cascadia Mono', monospace;
     --font-ui: 'IBM Plex Sans', 'Noto Sans SC', sans-serif;

@@ -2,33 +2,48 @@
   <transition name="station-fade">
     <div ref="panelRef" class="results-panel" :style="panelStyle">
       <div class="results-panel__panel">
+        <div class="results-panel__edge"></div>
         <div class="results-panel__header" @mousedown="startDrag">
-          <div class="results-panel__title">用户管理</div>
-          <button class="results-panel__close" type="button" title="关闭" @click="handleClose" @mousedown.stop>
+          <div class="results-panel__heading">
+            <div class="results-panel__badge">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M12 7.2a2.6 2.6 0 1 0 0-5.2 2.6 2.6 0 0 0 0 5.2Zm0 2.2c-3.2 0-5.8 1.7-5.8 3.8v1.6h11.6v-1.6c0-2.1-2.6-3.8-5.8-3.8Z"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </div>
+            <div>
+              <h2 class="results-panel__title">用户管理</h2>
+              <p class="results-panel__subtitle">Manage accounts and access status.</p>
+            </div>
+          </div>
+          <button class="results-panel__icon-btn" type="button" title="关闭" @click="handleClose" @mousedown.stop>
             <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6.4 6.4 17.6 17.6M17.6 6.4 6.4 17.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              <path
+                d="M6.4 6.4 17.6 17.6M17.6 6.4 6.4 17.6"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+              />
             </svg>
           </button>
         </div>
 
-        <div class="results-panel__toolbar">
-          <label class="results-panel__field">
-            <span>用户名称</span>
-            <el-input v-model="queryParams.search" placeholder="请输入用户名称" clearable />
-          </label>
-          <div class="results-panel__actions">
-            <button v-show="is_staff" class="results-panel__btn results-panel__btn--outline" type="button" @click="showAddDialog = true">
-              新增用户
-            </button>
-            <button v-show="is_staff" class="results-panel__btn results-panel__btn--danger" type="button" @click="handleBatchDelete">
-              批量删除
-            </button>
-            <button class="results-panel__btn results-panel__btn--ghost" type="button" @click="handleReset">重置</button>
-            <button class="results-panel__btn results-panel__btn--primary" type="button" @click="handleSearch">查询</button>
-          </div>
-        </div>
-
         <div class="results-panel__section-head">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M5 7h14M5 12h14M5 17h10"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linecap="round"
+            />
+          </svg>
           <h3 class="results-panel__card-title">用户列表</h3>
         </div>
 
@@ -36,21 +51,46 @@
           <el-table
             v-loading="loading"
             :data="tableData"
-            @selection-change="handleSelectionChange"
             style="width: 100%"
             :row-style="{ height: '40px' }"
             :row-class-name="tableRowClassName"
           >
-            <el-table-column type="selection" width="40" align="center" />
             <el-table-column prop="id" label="用户ID" type="index" width="90" align="center" />
-            <el-table-column prop="username" label="用户名称" align="center" min-width="120" show-overflow-tooltip />
-            <el-table-column prop="description" label="用户描述" align="center" min-width="160" show-overflow-tooltip />
-            <el-table-column prop="is_active" label="用户状态" align="center" width="120" v-if="is_staff">
+            <el-table-column prop="username" label="用户名称" align="center" min-width="120">
+              <template #default="{ row }">
+                <el-tooltip
+                  :content="row.username || ''"
+                  placement="top"
+                  effect="dark"
+                  :disabled="!row.username"
+                  :show-after="120"
+                  :offset="8"
+                  append-to="body"
+                  popper-class="gotham-table-tooltip"
+                >
+                  <span class="results-panel__ellip">{{ row.username }}</span>
+                </el-tooltip>
+              </template>
+            </el-table-column>
+            <el-table-column prop="description" label="用户描述" align="center" min-width="160">
+              <template #default="{ row }">
+                <el-tooltip
+                  :content="row.description || ''"
+                  placement="top"
+                  effect="dark"
+                  :disabled="!row.description"
+                  :show-after="120"
+                  :offset="8"
+                  append-to="body"
+                  popper-class="gotham-table-tooltip"
+                >
+                  <span class="results-panel__ellip">{{ row.description }}</span>
+                </el-tooltip>
+              </template>
+            </el-table-column>
+            <el-table-column v-if="is_staff" prop="is_active" label="用户状态" align="center" width="120">
               <template #default="scope">
-                <el-switch
-                  @change="handleStatusChange(scope.row)"
-                  v-model="scope.row.is_active"
-                />
+                <el-switch v-model="scope.row.is_active" @change="handleStatusChange(scope.row)" />
               </template>
             </el-table-column>
             <el-table-column label="操作" align="center" width="160">
@@ -58,7 +98,12 @@
                 <div class="results-panel__row-actions">
                   <button class="results-panel__link" type="button" @click="handleView(scope.row)">查看</button>
                   <button class="results-panel__link" type="button" @click="handleEdit(scope.row)">编辑</button>
-                  <button v-show="is_staff" class="results-panel__link results-panel__link--danger" type="button" @click="handleDelete(scope.row)">
+                  <button
+                    v-show="is_staff"
+                    class="results-panel__link results-panel__link--danger"
+                    type="button"
+                    @click="handleDelete(scope.row)"
+                  >
                     删除
                   </button>
                 </div>
@@ -67,76 +112,211 @@
           </el-table>
         </div>
 
-        <div class="results-panel__footer">
-          <el-pagination
-            background
-            @size-change="handleSizeChange"
-            @current-change="handleCurrentChange"
-            :current-page="queryParams.page"
-            :page-sizes="[10, 20, 50, 100]"
-            layout="total, prev, pager, next, jumper"
-            :total="total"
-          />
+        <div class="results-panel__footer" :class="{ 'results-panel__footer--split': is_staff }">
+          <button
+            v-show="is_staff"
+            class="results-panel__btn results-panel__btn--ghost"
+            type="button"
+            @click="showAddDialog = true"
+          >
+            新增用户
+          </button>
+          <button class="results-panel__btn results-panel__btn--primary" type="button" @click="handleClose">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M5.4 12.4 10 17l8.6-9.2"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            确认
+          </button>
         </div>
 
+        <!-- 新增用户 -->
         <div v-if="showAddDialog" class="results-panel__sub">
           <div class="results-panel__sub-card">
+            <div class="results-panel__edge"></div>
             <div class="results-panel__sub-head">
-              <div class="results-panel__sub-title">新增用户</div>
-              <button class="results-panel__close" type="button" @click="showAddDialog = false">
+              <div class="results-panel__heading">
+                <div class="results-panel__badge">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      d="M12 7.2a2.6 2.6 0 1 0 0-5.2 2.6 2.6 0 0 0 0 5.2Zm0 2.2c-3.2 0-5.8 1.7-5.8 3.8v1.6h11.6v-1.6c0-2.1-2.6-3.8-5.8-3.8Z"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linejoin="round"
+                    />
+                    <path
+                      d="M18.5 10.5v5M16 13h5"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="results-panel__sub-title">新增用户</h3>
+                  <p class="results-panel__subtitle">Create a new account.</p>
+                </div>
+              </div>
+              <button class="results-panel__icon-btn" type="button" title="关闭" @click="showAddDialog = false">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6.4 6.4 17.6 17.6M17.6 6.4 6.4 17.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                  <path
+                    d="M6.4 6.4 17.6 17.6M17.6 6.4 6.4 17.6"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  />
                 </svg>
               </button>
             </div>
-            <el-form :rules="rules" ref="formRef" :model="addForm" label-position="top">
-              <el-form-item label="用户名称" prop="username">
-                <el-input v-model="addForm.username" placeholder="请输入" />
-              </el-form-item>
-              <el-form-item label="用户密码" prop="password">
-                <el-input v-model="addForm.password" placeholder="请输入" show-password />
-              </el-form-item>
-              <el-form-item label="用户描述" prop="description">
-                <el-input v-model="addForm.description" placeholder="请输入" />
-              </el-form-item>
-            </el-form>
+            <div class="results-panel__sub-body">
+              <div class="results-panel__section-head results-panel__section-head--in-sub">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M5 7h14M5 12h14M5 17h10"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                  />
+                </svg>
+                <h3>Account</h3>
+              </div>
+              <el-form
+                :rules="rules"
+                ref="formRef"
+                :model="addForm"
+                label-position="top"
+                class="results-panel__form"
+                require-asterisk-position="right"
+                :show-message="false"
+              >
+                <el-form-item label="用户名称" prop="username">
+                  <el-input v-model="addForm.username" placeholder="请输入" />
+                </el-form-item>
+                <el-form-item label="用户密码" prop="password">
+                  <el-input v-model="addForm.password" placeholder="请输入" show-password />
+                </el-form-item>
+                <el-form-item label="用户描述" prop="description">
+                  <el-input v-model="addForm.description" placeholder="请输入" />
+                </el-form-item>
+              </el-form>
+            </div>
             <div class="results-panel__sub-actions">
-              <button class="results-panel__btn results-panel__btn--ghost" type="button" @click="showAddDialog = false">取消</button>
-              <button class="results-panel__btn results-panel__btn--primary" type="button" @click="handleConfirmAdd(formRef)">确认</button>
+              <button class="results-panel__btn results-panel__btn--ghost" type="button" @click="showAddDialog = false">
+                取消
+              </button>
+              <button class="results-panel__btn results-panel__btn--primary" type="button" @click="handleConfirmAdd(formRef)">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M5.4 12.4 10 17l8.6-9.2"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+                确认
+              </button>
             </div>
           </div>
         </div>
 
+        <!-- 查看 / 编辑用户 -->
         <div v-if="showEditDialog" class="results-panel__sub">
           <div class="results-panel__sub-card">
+            <div class="results-panel__edge"></div>
             <div class="results-panel__sub-head">
-              <div class="results-panel__sub-title">{{ dialogTitle }}</div>
-              <button class="results-panel__close" type="button" @click="showEditDialog = false">
+              <div class="results-panel__heading">
+                <div class="results-panel__badge">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      d="M12 7.2a2.6 2.6 0 1 0 0-5.2 2.6 2.6 0 0 0 0 5.2Zm0 2.2c-3.2 0-5.8 1.7-5.8 3.8v1.6h11.6v-1.6c0-2.1-2.6-3.8-5.8-3.8Z"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="results-panel__sub-title">{{ dialogTitle }}</h3>
+                  <p class="results-panel__subtitle">
+                    {{ dialogStatus === "查看" ? "View account details." : "Edit account details." }}
+                  </p>
+                </div>
+              </div>
+              <button class="results-panel__icon-btn" type="button" title="关闭" @click="showEditDialog = false">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6.4 6.4 17.6 17.6M17.6 6.4 6.4 17.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                  <path
+                    d="M6.4 6.4 17.6 17.6M17.6 6.4 6.4 17.6"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  />
                 </svg>
               </button>
             </div>
-            <el-form :model="editForm" label-position="top">
-              <el-form-item label="用户名称">
-                <el-input v-model="editForm.username" placeholder="请输入" :disabled="dialogStatus === '查看'" />
-              </el-form-item>
-              <el-form-item label="用户密码">
-                <el-input v-model="editForm.password" placeholder="请输入" :disabled="dialogStatus === '查看'" show-password />
-              </el-form-item>
-              <el-form-item label="用户描述">
-                <el-input v-model="editForm.description" placeholder="请输入" :disabled="dialogStatus === '查看'" />
-              </el-form-item>
-              <el-form-item label="用户状态">
-                <el-switch
-                  :disabled="dialogStatus === '查看'"
-                  v-model="editForm.is_active"
-                />
-              </el-form-item>
-            </el-form>
+            <div class="results-panel__sub-body">
+              <div class="results-panel__section-head results-panel__section-head--in-sub">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M5 7h14M5 12h14M5 17h10"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                  />
+                </svg>
+                <h3>Account</h3>
+              </div>
+              <el-form :model="editForm" label-position="top" class="results-panel__form">
+                <el-form-item label="用户名称">
+                  <el-input v-model="editForm.username" placeholder="请输入" :disabled="dialogStatus === '查看'" />
+                </el-form-item>
+                <el-form-item label="用户密码">
+                  <el-input
+                    v-model="editForm.password"
+                    placeholder="请输入"
+                    :disabled="dialogStatus === '查看'"
+                    show-password
+                  />
+                </el-form-item>
+                <el-form-item label="用户描述">
+                  <el-input v-model="editForm.description" placeholder="请输入" :disabled="dialogStatus === '查看'" />
+                </el-form-item>
+                <el-form-item label="用户状态">
+                  <el-switch :disabled="dialogStatus === '查看'" v-model="editForm.is_active" />
+                </el-form-item>
+              </el-form>
+            </div>
             <div class="results-panel__sub-actions">
-              <button class="results-panel__btn results-panel__btn--ghost" type="button" @click="showEditDialog = false">取消</button>
-              <button class="results-panel__btn results-panel__btn--primary" type="button" @click="handleConfirmEdit">确认</button>
+              <button class="results-panel__btn results-panel__btn--ghost" type="button" @click="showEditDialog = false">
+                取消
+              </button>
+              <button class="results-panel__btn results-panel__btn--primary" type="button" @click="handleConfirmEdit">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M5.4 12.4 10 17l8.6-9.2"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+                确认
+              </button>
             </div>
           </div>
         </div>
@@ -148,23 +328,16 @@
 <script lang="ts" setup>
 //@ts-nocheck
 
-import { nextTick, onMounted, reactive, ref } from "vue";
+import { nextTick, onMounted, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { listUser, addUser, delUser, updateUser, batchDelUser } from "@/request/system_user";
+import { listUser, addUser, delUser, updateUser } from "@/request/system_user";
+import { shakeInvalidFormFields } from "@/view/home/service/formShake";
 import { useGothamPanel } from "./useGothamPanel";
 
 const { panelRef, panelStyle, startDrag, handleClose } = useGothamPanel(960);
 
-const queryParams = ref({
-  page: 1,
-  search: "",
-});
-
-let tableData: any = reactive([]);
-const total = ref(0);
+const tableData = ref<any[]>([]);
 const loading = ref(false);
-const ids = ref<number[]>([]);
-const multiple = ref(true);
 const is_staff = ref(false);
 
 const showAddDialog = ref(false);
@@ -199,7 +372,7 @@ const handleConfirmAdd = async (formEl: any) => {
       getList();
       return;
     }
-    ElMessage.error("请填写完整信息");
+    shakeInvalidFormFields(formEl);
   });
 };
 
@@ -222,39 +395,12 @@ const handleStatusChange = async (row: any) => {
 const getList = async () => {
   loading.value = true;
   try {
-    const res: any = await listUser(queryParams.value);
-    tableData = res.results || [];
-    total.value = res.count || 0;
+    const res: any = await listUser({ page: 1, page_size: 1000 });
+    tableData.value = res.results || res || [];
   } catch (error) {
   } finally {
     loading.value = false;
   }
-};
-
-const handleSizeChange = (val: number) => {
-  queryParams.value.page = val;
-  getList();
-};
-
-const handleCurrentChange = (val: number) => {
-  queryParams.value.page = val;
-  getList();
-};
-
-const handleSearch = () => {
-  queryParams.value.page = 1;
-  getList();
-};
-
-const handleReset = () => {
-  queryParams.value.search = "";
-  queryParams.value.page = 1;
-  getList();
-};
-
-const handleSelectionChange = (selection: any[]) => {
-  ids.value = selection.map((item: any) => item.id);
-  multiple.value = !selection.length;
 };
 
 const showEditDialog = ref(false);
@@ -307,38 +453,15 @@ const handleConfirmEdit = async () => {
   } catch (error) {}
 };
 
-const handleDelete = (row?: any) => {
-  const deleteIds = row ? [row.id] : ids.value;
-  ElMessageBox.confirm("确认删除选中数据?", "警告", {
+const handleDelete = (row: any) => {
+  ElMessageBox.confirm("确认删除该用户?", "警告", {
     confirmButtonText: "确定",
     cancelButtonText: "取消",
     type: "warning",
     customClass: "gotham-message-box",
   })
     .then(() => {
-      delUser(deleteIds)
-        .then(() => {
-          ElMessage.success("删除成功");
-          getList();
-        })
-        .catch(() => {});
-    })
-    .catch(() => {});
-};
-
-const handleBatchDelete = () => {
-  if (ids.value.length === 0) {
-    ElMessage.warning("请选择要删除的数据");
-    return;
-  }
-  ElMessageBox.confirm("确认删除选中数据?", "警告", {
-    confirmButtonText: "确定",
-    cancelButtonText: "取消",
-    type: "warning",
-    customClass: "gotham-message-box",
-  })
-    .then(() => {
-      batchDelUser(ids.value)
+      delUser(row.id)
         .then(() => {
           ElMessage.success("删除成功");
           getList();

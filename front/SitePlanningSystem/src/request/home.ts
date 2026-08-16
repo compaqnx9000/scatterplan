@@ -73,6 +73,7 @@ export function exportExcel(data: { id: number; cluster_stats: number }) {
     },
     method: "post",
     data: data,
+    responseType: "blob",
   });
 }
 

@@ -7,18 +7,20 @@
       :style="panelStyle"
     >
       <div class="new-project__panel">
+        <div class="new-project__edge"></div>
+
         <div class="new-project__header" @mousedown="startDrag">
-          <div class="new-project__title">新建工程</div>
-          <button class="new-project__close" type="button" title="关闭" @click="setVisible(false)" @mousedown.stop>
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="M6.4 6.4 17.6 17.6M17.6 6.4 6.4 17.6"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-              />
-            </svg>
+          <div class="new-project__heading">
+            <div class="new-project__badge">
+              <span class="material-symbols-outlined icon-fill">create_new_folder</span>
+            </div>
+            <div>
+              <h2 class="new-project__title">新建工程</h2>
+              <p class="new-project__subtitle">Create a new project for propagation planning.</p>
+            </div>
+          </div>
+          <button class="new-project__icon-btn new-project__icon-btn--close" type="button" title="关闭" @click="setVisible(false)" @mousedown.stop>
+            <span class="material-symbols-outlined">close</span>
           </button>
         </div>
 
@@ -27,21 +29,31 @@
           :model="form"
           :rules="rules"
           label-position="top"
-          class="station-config__form"
+          class="new-project__form"
           require-asterisk-position="right"
           :show-message="false"
           @submit.prevent
         >
-          <section class="new-project__card">
-            <el-form-item label="工程名称" prop="name">
-              <el-input
-                v-model="form.name"
-                placeholder="请输入工程名称"
-                clearable
-                @keyup.enter="handleConfirm"
+          <div class="new-project__section-head">
+            <svg class="new-project__section-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M4 6.5A2.5 2.5 0 0 1 6.5 4H10l1.8 1.8H17.5A2.5 2.5 0 0 1 20 8.3v9.2A2.5 2.5 0 0 1 17.5 20h-11A2.5 2.5 0 0 1 4 17.5V6.5Z"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linejoin="round"
               />
-            </el-form-item>
-          </section>
+            </svg>
+            <h3>Project Info</h3>
+          </div>
+          <el-form-item label="工程名称" prop="name">
+            <el-input
+              v-model="form.name"
+              placeholder="请输入工程名称"
+              clearable
+              @keyup.enter="handleConfirm"
+            />
+          </el-form-item>
         </el-form>
 
         <div class="new-project__footer">
@@ -49,19 +61,8 @@
             取消
           </button>
           <button class="new-project__btn new-project__btn--primary" type="button" @click="handleConfirm">
-            <span>确认</span>
-            <span class="new-project__btn-arrow">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M9.5 6.5 15.5 12l-6 5.5"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </span>
+            <span class="material-symbols-outlined">check</span>
+            确认
           </button>
         </div>
       </div>
@@ -93,7 +94,7 @@ const panelRef = ref<HTMLElement | null>(null);
 const panelPos = ref({ x: 0, y: 0 });
 const dragging = ref(false);
 const dragOffset = ref({ x: 0, y: 0 });
-const PANEL_WIDTH = 420;
+const PANEL_WIDTH = 560;
 
 const panelStyle = computed(() => ({
   left: `${panelPos.value.x}px`,
@@ -197,170 +198,294 @@ onBeforeUnmount(() => {
   }
 
   &__panel {
+    position: relative;
     width: 100%;
     display: flex;
     flex-direction: column;
-    padding: 22px 24px 20px;
-    border-radius: 14px;
-    background: rgba(26, 34, 44, 0.72);
-    border: 1px solid rgba(180, 200, 220, 0.18);
-    box-shadow:
-      0 18px 48px rgba(0, 0, 0, 0.38),
-      inset 0 1px 0 rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(22px) saturate(1.15);
-    -webkit-backdrop-filter: blur(22px) saturate(1.15);
-    color: #ffffff;
+    overflow: hidden;
+    border-radius: 0.75rem;
+    background: rgba(12, 21, 16, 0.85);
+    border: 1px solid rgba(64, 73, 69, 0.3);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    color: #dae5dc;
+  }
+
+  &__edge {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.1), transparent);
+    pointer-events: none;
   }
 
   &__header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 16px;
+    padding: 20px 24px;
+    border-bottom: 1px solid rgba(64, 73, 69, 0.2);
+    background: rgba(45, 55, 49, 0.5);
     cursor: move;
     user-select: none;
   }
 
-  &__title {
-    font-size: 20px;
-    font-weight: 600;
-    color: #ffffff;
+  &__heading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
   }
 
-  &__close {
+  &__badge {
     width: 32px;
     height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    background: rgba(45, 90, 76, 0.3);
+    border: 1px solid rgba(161, 209, 191, 0.2);
+    color: #a1d1bf;
+
+    .material-symbols-outlined {
+      font-size: 14px;
+    }
+  }
+
+  &__title {
+    margin: 0;
+    font-family: Inter, sans-serif;
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 32px;
+    color: #dae5dc;
+  }
+
+  &__subtitle {
+    margin: 4px 0 0;
+    font-family: Inter, sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 20px;
+    color: #c0c8c3;
+    word-break: normal;
+  }
+
+  &__icon-btn {
+    width: 32px;
+    height: 32px;
+    padding: 6px;
     border: none;
-    border-radius: 8px;
+    border-radius: 0.375rem;
     background: transparent;
-    color: rgba(210, 220, 230, 0.75);
+    color: #c0c8c3;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     justify-content: center;
 
-    svg { width: 18px; height: 18px; }
+    .material-symbols-outlined {
+      font-size: 14px;
+    }
 
     &:hover {
-      background: rgba(255, 255, 255, 0.08);
-      color: #fff;
+      background: #2d3731;
+      color: #dae5dc;
+    }
+
+    &--close:hover {
+      background: #93000a;
+      color: #ffdad6;
     }
   }
 
-  &__card {
-    padding: 14px 14px 4px;
-    border-radius: 10px;
-    background: rgba(18, 24, 31, 0.55);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+  &__form {
+    padding: 24px;
+  }
+
+  &__section-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(64, 73, 69, 0.2);
+    color: #99d4ae;
+
+    .new-project__section-icon {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      display: block;
+    }
+
+    h3 {
+      margin: 0;
+      font-family: Inter, sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 16px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #dae5dc;
+    }
   }
 
   &__footer {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    margin-top: 16px;
-    gap: 12px;
+    justify-content: flex-end;
+    gap: 16px;
+    padding: 16px 24px;
+    border-top: 1px solid rgba(64, 73, 69, 0.2);
+    background: rgba(45, 55, 49, 0.3);
   }
 
   &__btn {
     border: none;
     cursor: pointer;
-    font-size: 12px;
-    color: #fff;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    font-family: Inter, sans-serif;
+    font-size: 14px;
+    line-height: 20px;
+    word-break: normal;
 
     &--ghost {
-      min-width: 72px;
-      height: 40px;
-      padding: 0 16px;
-      border-radius: 8px;
-      background: rgba(38, 44, 53, 0.92);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: rgba(235, 240, 245, 0.92);
+      padding: 10px 20px;
+      border-radius: 0.5rem;
+      background: transparent;
+      border: 1px solid #404945;
+      color: #c0c8c3;
+      font-weight: 500;
 
-      &:hover { background: rgba(48, 56, 66, 0.95); }
+      &:hover {
+        color: #dae5dc;
+        background: rgba(45, 55, 49, 0.5);
+      }
     }
 
     &--primary {
-      min-width: 120px;
-      height: 44px;
-      padding: 0 16px 0 20px;
-      border-radius: 999px;
-      background: linear-gradient(90deg, #00a2ff 0%, #3b82f6 100%);
-      box-shadow: 0 8px 24px rgba(0, 162, 255, 0.38);
-      font-weight: 600;
+      padding: 10px 32px;
+      border-radius: 0.5rem;
+      background: #9ddf2e;
+      color: #213600;
+      font-weight: 700;
+      gap: 8px;
+      box-shadow: 0 0 20px rgba(157, 223, 46, 0.4);
+      transition: all 0.2s ease;
+
+      .material-symbols-outlined {
+        font-size: 14px;
+      }
 
       &:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 10px 28px rgba(59, 130, 246, 0.45);
+        background: #b2f746;
+        transform: translateY(-2px);
+        box-shadow: 0 0 30px rgba(157, 223, 46, 0.6);
       }
     }
   }
 
-  &__btn-arrow {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.22);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-
-    svg { width: 14px; height: 14px; }
-  }
-
   :deep(.el-form-item) {
-    margin-bottom: 12px;
+    margin-bottom: 0;
   }
 
   :deep(.el-form-item__label) {
-    color: rgba(190, 200, 212, 0.88);
-    font-size: 10px;
-    line-height: 1.2;
+    font-family: Inter, sans-serif;
+    color: #ffffff !important;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 14px;
     margin-bottom: 6px !important;
     padding: 0;
   }
 
   :deep(.el-form-item.is-required:not(.is-no-asterisk).asterisk-right > .el-form-item__label:after),
   :deep(.el-form-item.is-required:not(.is-no-asterisk) > .el-form-item__label:before) {
-    color: #ff6b6b;
+    color: #ffb4ab;
   }
 
-  :deep(.station-config__form .el-input__wrapper) {
-    background: rgba(26, 34, 44, 0.72) !important;
+  :deep(.new-project__form .el-input__wrapper) {
+    background: #07100b !important;
     border: 1px solid rgba(180, 200, 220, 0.18) !important;
+    outline: 1px solid rgba(180, 200, 220, 0.18);
+    outline-offset: -1px;
     border-radius: 8px !important;
     box-shadow: none !important;
-    min-height: 36px;
+    min-height: 40px;
+    padding: 8px 12px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, outline-color 0.15s ease;
   }
 
-  :deep(.station-config__form .el-form-item.is-error .el-input__wrapper) {
-    border-color: rgba(248, 113, 113, 0.7) !important;
+  :deep(.new-project__form .el-input__wrapper:hover) {
+    border-color: rgba(180, 200, 220, 0.32) !important;
+    outline-color: rgba(180, 200, 220, 0.32);
+    box-shadow: none !important;
+  }
+
+  :deep(.new-project__form .el-input__wrapper.is-focus),
+  :deep(.new-project__form .el-input__wrapper.is-focus:hover) {
+    border-color: #9ddf2e !important;
+    outline-color: #9ddf2e;
+    box-shadow: 0 0 0 1px #9ddf2e, 0 0 0 3px rgba(157, 223, 46, 0.35) !important;
+  }
+
+  :deep(.new-project__form .el-form-item.is-error .el-input__wrapper) {
+    border-color: #ffb4ab !important;
+    box-shadow: none !important;
   }
 
   :deep(.el-input__inner) {
-    color: #ffffff !important;
-    font-size: 12px !important;
+    color: #dae5dc !important;
+    font-family: Inter, sans-serif !important;
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    line-height: 20px !important;
+    word-break: normal !important;
+    user-select: text !important;
+    -webkit-user-select: text !important;
 
     &::placeholder {
-      color: rgba(210, 220, 230, 0.72) !important;
-      -webkit-text-fill-color: rgba(210, 220, 230, 0.72) !important;
+      color: rgba(192, 200, 195, 0.7) !important;
+      -webkit-text-fill-color: rgba(192, 200, 195, 0.7) !important;
       opacity: 1 !important;
+    }
+
+    &::selection {
+      background: #9ddf2e !important;
+      color: #213600 !important;
+    }
+
+    &::-moz-selection {
+      background: #9ddf2e !important;
+      color: #213600 !important;
     }
   }
 
+  :deep(.new-project__form .el-input),
+  :deep(.new-project__form .el-input__wrapper) {
+    font-family: Inter, sans-serif !important;
+    font-size: 14px !important;
+  }
+
   :deep(.el-input__inner::-webkit-input-placeholder) {
-    color: rgba(210, 220, 230, 0.72) !important;
-    -webkit-text-fill-color: rgba(210, 220, 230, 0.72) !important;
+    color: rgba(192, 200, 195, 0.7) !important;
+    -webkit-text-fill-color: rgba(192, 200, 195, 0.7) !important;
     opacity: 1 !important;
   }
 
   :deep(input::placeholder) {
-    color: rgba(210, 220, 230, 0.72) !important;
+    color: rgba(192, 200, 195, 0.7) !important;
     opacity: 1 !important;
+  }
+
+  :deep(.el-input__suffix) {
+    color: #c0c8c3;
   }
 }
 

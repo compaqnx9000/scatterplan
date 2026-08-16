@@ -128,153 +128,185 @@
         :style="clusterResultPanelStyle"
       >
         <div class="results-panel__panel">
+          <div class="results-panel__edge"></div>
           <div class="results-panel__header" @mousedown="startClusterResultDrag">
-            <div class="results-panel__title">
-              {{ showRelayClusterAnalysisDialog ? "中继站点列表" : "聚类分析及站点推荐" }}
+            <div class="results-panel__heading">
+              <div class="results-panel__badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M5 7h4v4H5zm5 0h4v4h-4zm5 0h4v4h-4zM7.5 14.5 5 19h14l-3.5-4.5-2.5 3z"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h2 class="results-panel__title">
+                  {{ showRelayClusterAnalysisDialog ? "中继站点列表" : "聚类分析及站点推荐" }}
+                </h2>
+                <p class="results-panel__subtitle">
+                  计算耗时：{{ showRelayClusterAnalysisDialog ? getRelayTableDataTime : getTableDataTime }}
+                </p>
+              </div>
             </div>
-            <button class="results-panel__close" type="button" title="关闭" @click="closeClusterResultPanel" @mousedown.stop>
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M6.4 6.4 17.6 17.6M17.6 6.4 6.4 17.6"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                />
-              </svg>
-            </button>
-          </div>
-
-          <div class="results-panel__section-head">
-            <h3 class="results-panel__card-title">
-              计算耗时：{{ showRelayClusterAnalysisDialog ? getRelayTableDataTime : getTableDataTime }}
-            </h3>
-            <div class="results-panel__actions">
+            <div class="results-panel__header-actions">
               <button
                 v-show="showClusterAnalysisDialog && relayTableData.length"
                 class="results-panel__btn results-panel__btn--ghost"
                 type="button"
                 @click="showClusterAnalysisDialog = false; showRelayClusterAnalysisDialog = true"
+                @mousedown.stop
               >
                 返回
               </button>
-              <el-dropdown v-if="showClusterAnalysisDialog" trigger="click" :teleported="false" placement="bottom-end">
-                <button class="results-panel__btn results-panel__btn--ghost" type="button">导出</button>
-                <template #dropdown>
-                  <el-dropdown-menu>
-                    <el-dropdown-item @click="handleExportExcel">导出 Excel</el-dropdown-item>
-                    <el-dropdown-item @click="handleExportImage">导出图片</el-dropdown-item>
-                  </el-dropdown-menu>
-                </template>
-              </el-dropdown>
+              <button
+                class="results-panel__icon-btn"
+                type="button"
+                title="关闭"
+                @click="closeClusterResultPanel"
+                @mousedown.stop
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M6.4 6.4 17.6 17.6M17.6 6.4 6.4 17.6"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              </button>
             </div>
           </div>
 
-          <div class="results-panel__table">
-            <el-table
-              v-if="showClusterAnalysisDialog"
-              height="320"
-              :data="tableData"
-              style="width: 100%"
-              header-row-class-name="results-table-header"
-              :row-style="{ height: '40px' }"
-              :row-class-name="tableRowClassName"
-            >
-              <el-table-column label="序号" type="index" width="70" align="center" />
-              <el-table-column label="站点编号" align="center" min-width="110">
-                <template #default="scope">
-                  <el-input v-model="scope.row.number" size="small" />
-                </template>
-              </el-table-column>
-              <el-table-column label="站点名称" align="center" min-width="120">
-                <template #default="scope">
-                  <el-input v-model="scope.row.name" size="small" />
-                </template>
-              </el-table-column>
-              <el-table-column label="接收点经度" align="center" min-width="120">
-                <template #default="scope">
-                  {{ formatDecimal6(scope.row.longitude) }}
-                </template>
-              </el-table-column>
-              <el-table-column label="接收点纬度" align="center" min-width="120">
-                <template #default="scope">
-                  {{ formatDecimal6(scope.row.latitude) }}
-                </template>
-              </el-table-column>
-              <el-table-column label="坡度（°）" align="center" min-width="90">
-                <template #default="scope">
-                  {{ formatDecimal6(scope.row.slope) }}
-                </template>
-              </el-table-column>
-              <el-table-column label="道路距离（m）" align="center" min-width="110">
-                <template #default="scope">
-                  {{ Number(scope.row.to_road_distance).toFixed(0) }}
-                </template>
-              </el-table-column>
-              <el-table-column label="操作" align="center" width="150" fixed="right">
-                <template #default="scope">
-                  <div class="results-panel__row-actions">
-                    <button class="results-panel__link" type="button" @click="handleApplySite(scope.row)">保存</button>
-                    <button class="results-panel__link" type="button" @click="handleLinkageCalculation(scope.row)">链路计算</button>
-                  </div>
-                </template>
-              </el-table-column>
-            </el-table>
+          <div class="results-panel__body">
+            <div class="results-panel__table">
+              <el-table
+                v-if="showClusterAnalysisDialog"
+                height="320"
+                :data="tableData"
+                style="width: 100%"
+                header-row-class-name="results-table-header"
+                :row-style="{ height: '40px' }"
+                :row-class-name="tableRowClassName"
+              >
+                <el-table-column label="序号" type="index" width="70" align="center" />
+                <el-table-column label="站点编号" align="center" min-width="110">
+                  <template #default="scope">
+                    <el-input v-model="scope.row.number" size="small" />
+                  </template>
+                </el-table-column>
+                <el-table-column label="站点名称" align="center" min-width="120">
+                  <template #default="scope">
+                    <el-input v-model="scope.row.name" size="small" />
+                  </template>
+                </el-table-column>
+                <el-table-column label="接收点经度" align="center" min-width="120">
+                  <template #default="scope">
+                    {{ formatDecimal6(scope.row.longitude) }}
+                  </template>
+                </el-table-column>
+                <el-table-column label="接收点纬度" align="center" min-width="120">
+                  <template #default="scope">
+                    {{ formatDecimal6(scope.row.latitude) }}
+                  </template>
+                </el-table-column>
+                <el-table-column label="坡度（°）" align="center" min-width="90">
+                  <template #default="scope">
+                    {{ formatDecimal6(scope.row.slope) }}
+                  </template>
+                </el-table-column>
+                <el-table-column label="道路距离（m）" align="center" min-width="110">
+                  <template #default="scope">
+                    {{ Number(scope.row.to_road_distance).toFixed(0) }}
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作" align="center" width="150" fixed="right">
+                  <template #default="scope">
+                    <div class="results-panel__row-actions">
+                      <button class="results-panel__link" type="button" @click="handleApplySite(scope.row)">保存</button>
+                      <button class="results-panel__link" type="button" @click="handleLinkageCalculation(scope.row)">链路计算</button>
+                    </div>
+                  </template>
+                </el-table-column>
+              </el-table>
 
-            <el-table
-              v-else
-              height="320"
-              :data="relayTableData"
-              style="width: 100%"
-              header-row-class-name="results-table-header"
-              :row-style="{ height: '40px' }"
-              :row-class-name="tableRowClassName"
-            >
-              <el-table-column label="序号" type="index" width="70" align="center" />
-              <el-table-column label="站点编号" align="center" min-width="110">
-                <template #default="scope">
-                  <el-input v-model="scope.row.number" size="small" />
-                </template>
-              </el-table-column>
-              <el-table-column label="站点名称" align="center" min-width="120">
-                <template #default="scope">
-                  <el-input v-model="scope.row.name" size="small" />
-                </template>
-              </el-table-column>
-              <el-table-column label="接收点经度" align="center" min-width="120">
-                <template #default="scope">
-                  {{ formatDecimal6(scope.row.longitude) }}
-                </template>
-              </el-table-column>
-              <el-table-column label="接收点纬度" align="center" min-width="120">
-                <template #default="scope">
-                  {{ formatDecimal6(scope.row.latitude) }}
-                </template>
-              </el-table-column>
-              <el-table-column label="坡度（°）" align="center" min-width="90">
-                <template #default="scope">
-                  {{ formatDecimal6(scope.row.slope) }}
-                </template>
-              </el-table-column>
-              <el-table-column label="道路距离（m）" align="center" min-width="110">
-                <template #default="scope">
-                  {{ Number(scope.row.to_road_distance).toFixed(0) }}
-                </template>
-              </el-table-column>
-              <el-table-column label="操作" align="center" width="110" fixed="right">
-                <template #default="scope">
-                  <div class="results-panel__row-actions">
-                    <button class="results-panel__link" type="button" @click="handleRelaySiteCalculation(scope.row, scope.$index)">
-                      站点计算
-                    </button>
-                  </div>
-                </template>
-              </el-table-column>
-            </el-table>
+              <el-table
+                v-else
+                height="320"
+                :data="relayTableData"
+                style="width: 100%"
+                header-row-class-name="results-table-header"
+                :row-style="{ height: '40px' }"
+                :row-class-name="tableRowClassName"
+              >
+                <el-table-column label="序号" type="index" width="70" align="center" />
+                <el-table-column label="站点编号" align="center" min-width="110">
+                  <template #default="scope">
+                    <el-input v-model="scope.row.number" size="small" />
+                  </template>
+                </el-table-column>
+                <el-table-column label="站点名称" align="center" min-width="120">
+                  <template #default="scope">
+                    <el-input v-model="scope.row.name" size="small" />
+                  </template>
+                </el-table-column>
+                <el-table-column label="接收点经度" align="center" min-width="120">
+                  <template #default="scope">
+                    {{ formatDecimal6(scope.row.longitude) }}
+                  </template>
+                </el-table-column>
+                <el-table-column label="接收点纬度" align="center" min-width="120">
+                  <template #default="scope">
+                    {{ formatDecimal6(scope.row.latitude) }}
+                  </template>
+                </el-table-column>
+                <el-table-column label="坡度（°）" align="center" min-width="90">
+                  <template #default="scope">
+                    {{ formatDecimal6(scope.row.slope) }}
+                  </template>
+                </el-table-column>
+                <el-table-column label="道路距离（m）" align="center" min-width="110">
+                  <template #default="scope">
+                    {{ Number(scope.row.to_road_distance).toFixed(0) }}
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作" align="center" width="110" fixed="right">
+                  <template #default="scope">
+                    <div class="results-panel__row-actions">
+                      <button class="results-panel__link" type="button" @click="handleRelaySiteCalculation(scope.row, scope.$index)">
+                        站点计算
+                      </button>
+                    </div>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
           </div>
 
           <div class="results-panel__footer">
+            <el-dropdown v-if="showClusterAnalysisDialog" trigger="click" :teleported="false" placement="top-end">
+              <button class="results-panel__btn results-panel__btn--ghost" type="button">导出</button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item @click="handleExportExcel">导出 Excel</el-dropdown-item>
+                  <el-dropdown-item @click="handleExportImage">导出图片</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
             <button class="results-panel__btn results-panel__btn--primary" type="button" @click="closeClusterResultPanel">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M5.4 12.4 10 17l8.6-9.2"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
               确认
             </button>
           </div>
@@ -431,12 +463,13 @@ import { color } from "echarts";
 import { getSingleLinkageImage, getClusterAnalysisList, useSite, exportExcel, setColorGenerateImage, getRecommendSiteList, saveRecommendSiteList, calculateReliability } from "@/request/home";
 import { createProject, getProject } from "@/request/sitePlanting";
 import { ElMessage, ElMessageBox } from "element-plus";
-
+import { saveAs } from "file-saver";
 import html2canvas from "html2canvas";
 
 import ScreenshotTool from "@/components/ScreenshotTool/index.vue";
 import { useRoute, useRouter } from 'vue-router';
 import { formatDecimal6 } from "@/view/systemData/useGothamPanel";
+import { parseLongitude, parseLatitude, formatLongitude, formatLatitude } from "@/view/home/service/rules";
 
 
 
@@ -452,8 +485,8 @@ const visible2 = ref(true);
 
 const drawLaunchSiteForm = reactive({
   name: "",
-  lng: "",
-  lat: "",
+  lng: "11.2345°\u00A0E",
+  lat: "45.8321°\u00A0N",
   height: 10,
   tx_gain: "38",
   rx_gain: "38",
@@ -515,6 +548,7 @@ const isSelectStartPointOver = ref(false);
 const projectOpen = ref(false);
 const currentProjectId = ref("");
 const showNewProjectDialog = ref(false);
+const railFullUnlock = ref(false);
 const menuList = reactive([
   {
     name: "单链路计算适配",
@@ -605,7 +639,6 @@ const handleProfileVisible = (val: boolean) => {
 const handleConfirmProfile = () => {
   clearProfileReturn();
   showProfileDialog.value = false;
-  showLinkageCalculationDialog.value = true;
 };
 const showComputedLoading = ref(false);
 const progressStopped = ref(false);
@@ -704,16 +737,12 @@ const handleConfirmLinkageCalculation = () => {
     }
   )
     .then(() => {
-
       showLinkageCalculationDialog.value = false;
-
+      showDialog("showCommunicationAreaDialog", 1);
+      $bus.emit("workflowActive", "coverage");
     })
     .catch(() => {
-
       showLinkageCalculationDialog.value = false;
-      router.push({
-        path: '/sitePlanning/sitePlanning',
-      })
     })
   // showLinkageCalculationDialog.value = false;
   // // 跳转站点规划
@@ -810,13 +839,20 @@ const btnloading = ref(false);
 const setTableData = (data: any) => {
   console.log(data, "setTableData");
   if (!data.stations || data.stations.length === 0) {
-    ElMessage({
-      message: data.stations_type === 'relay stations' ? '中继站点为空' : '推荐站点为空',
-      type: 'warning',
-      showClose: true,
-      duration: 0
-    })
-    return
+    ElMessageBox.alert(
+      data.stations_type === "relay stations" ? "中继站点为空" : "推荐站点为空",
+      "提示",
+      {
+        confirmButtonText: "确定",
+        type: "warning",
+        customClass: "gotham-message-box",
+        appendTo: document.body,
+        closeOnClickModal: false,
+        closeOnPressEscape: false,
+        showClose: false,
+      }
+    );
+    return;
   }
   if (data.stations_type === 'relay stations') {
     // 设置中继站点数据
@@ -860,6 +896,18 @@ const onOpenSLPComputedDialog = () => {
 const onOpenProfileExtract = () => {
   $bus.emit("workflowActive", "profile");
   clickChildMenu("profile", 0);
+};
+const onOpenLinkAnalysis = () => {
+  if (
+    !hasFilled(linkageCalculationForm.distance) &&
+    !hasFilled(linkageCalculationForm.image_url) &&
+    !hasFilled(ProfileForm.image_url)
+  ) {
+    ElMessage.warning("请先完成剖面提取");
+    return;
+  }
+  showLinkageCalculationDialog.value = true;
+  $bus.emit("workflowActive", "linkage");
 };
 const onOpenCoverageDialog = () => {
   showDialog("showCommunicationAreaDialog", 1);
@@ -919,8 +967,11 @@ const handleNewProjectConfirm = async (name: string) => {
     const res: any = await createProject({ name });
     currentProjectId.value = res.id;
     drawLaunchSiteForm.name = name;
+    railFullUnlock.value = false;
+    $bus.emit("workflowRailFull", false);
     projectOpen.value = true;
     showNewProjectDialog.value = false;
+    emitWorkflowPointState();
   } catch (error: any) {
     const data = error?.response?.data;
     const msg = data?.name?.[0] || data?.msg || "创建工程失败";
@@ -932,6 +983,7 @@ const bindHomeBus = () => {
   $bus.all?.delete?.("openLaunchSiteConfig");
   $bus.all?.delete?.("openSLPComputedDialog");
   $bus.all?.delete?.("openProfileExtract");
+  $bus.all?.delete?.("openLinkAnalysis");
   $bus.all?.delete?.("openCoverageDialog");
   $bus.all?.delete?.("runTransmissionLossPrediction");
   $bus.all?.delete?.("openClusterDialog");
@@ -940,6 +992,7 @@ const bindHomeBus = () => {
   $bus.on("openLaunchSiteConfig", onOpenLaunchSiteConfig);
   $bus.on("openSLPComputedDialog", onOpenSLPComputedDialog);
   $bus.on("openProfileExtract", onOpenProfileExtract);
+  $bus.on("openLinkAnalysis", onOpenLinkAnalysis);
   $bus.on("openCoverageDialog", onOpenCoverageDialog);
   $bus.on("runTransmissionLossPrediction", onRunTransmissionLossPrediction);
   $bus.on("openClusterDialog", onOpenClusterDialog);
@@ -965,6 +1018,7 @@ const resetAppToInitial = () => {
   showNewProjectDialog.value = false;
   isSelectStartPointOver.value = false;
   projectOpen.value = false;
+  railFullUnlock.value = false;
   currentProjectId.value = "";
   activeBtnIndex.value = 0;
   lossMapVisible.value = true;
@@ -992,8 +1046,8 @@ const resetAppToInitial = () => {
 
   Object.assign(drawLaunchSiteForm, {
     name: "",
-    lng: "",
-    lat: "",
+    lng: "11.2345°\u00A0E",
+    lat: "45.8321°\u00A0N",
     height: 10,
     tx_gain: "38",
     rx_gain: "38",
@@ -1112,7 +1166,12 @@ const resetAppToInitial = () => {
   $bus.emit("cancelDrawPoint");
   $bus.emit("mapPickMode", false);
   $bus.emit("clearAll");
+  $bus.emit("resetMapView");
   $bus.emit("workflowStationReady", false);
+  $bus.emit("workflowLinkReady", false);
+  $bus.emit("workflowProfileReady", false);
+  $bus.emit("workflowLinkAnalysisReady", false);
+  $bus.emit("workflowRailFull", false);
   $bus.emit("workflowActive", "");
   $bus.emit("workflowProjectOpen", false);
   $bus.emit("workflowProjectName", "");
@@ -1121,18 +1180,14 @@ const resetAppToInitial = () => {
 $bus.on("Logout", resetAppToInitial);
 
 watch(
-  () => isSelectStartPointOver.value,
-  (ready) => {
-    $bus.emit('workflowStationReady', !!ready);
-  },
-  { immediate: true }
-);
-
-watch(
   () => projectOpen.value,
   (open) => {
     $bus.emit("workflowProjectOpen", !!open);
     $bus.emit("workflowProjectName", open ? (drawLaunchSiteForm.name || "") : "");
+    if (!open) {
+      railFullUnlock.value = false;
+      $bus.emit("workflowRailFull", false);
+    }
   },
   { immediate: true }
 );
@@ -1335,6 +1390,33 @@ const hasFilled = (value: unknown) => {
   return String(value).trim() !== "";
 };
 
+const emitWorkflowPointState = () => {
+  const linkReady =
+    hasFilled(SLPComputeForm.lng) && hasFilled(SLPComputeForm.lat);
+  const stationReady = !!isSelectStartPointOver.value;
+  $bus.emit("workflowStationReady", stationReady);
+  $bus.emit("workflowLinkReady", linkReady);
+  $bus.emit("workflowProfileReady", stationReady && linkReady);
+};
+
+watch(
+  () => [isSelectStartPointOver.value, SLPComputeForm.lng, SLPComputeForm.lat],
+  () => {
+    emitWorkflowPointState();
+  },
+  { immediate: true }
+);
+
+$bus.on("workflowRailStateRequest", () => {
+  $bus.emit("workflowProjectOpen", !!projectOpen.value);
+  $bus.emit("workflowRailFull", !!railFullUnlock.value);
+  emitWorkflowPointState();
+  $bus.emit(
+    "workflowLinkAnalysisReady",
+    !!(hasFilled(linkageCalculationForm.distance) || hasFilled(ProfileForm.image_url) || hasFilled(linkageCalculationForm.image_url))
+  );
+});
+
 const hasRectangleArea = () =>
   hasFilled(CommunicationArea.initialPointLng) &&
   hasFilled(CommunicationArea.initialPointLat) &&
@@ -1361,13 +1443,13 @@ const startRectangleLossPrediction = (colors: string[]) => {
     rx_gain: drawLaunchSiteForm.rx_gain,
     trans_power: drawLaunchSiteForm.trans_power,
     diversity_order: drawLaunchSiteForm.diversity_order,
-    tx_lon: drawLaunchSiteForm.lng,
-    tx_lat: drawLaunchSiteForm.lat,
+    tx_lon: parseLongitude(drawLaunchSiteForm.lng),
+    tx_lat: parseLatitude(drawLaunchSiteForm.lat),
     freq: drawLaunchSiteForm.freq,
-    min_lon: CommunicationArea.initialPointLng,
-    min_lat: CommunicationArea.initialPointLat,
-    max_lon: CommunicationArea.destinationPointLng,
-    max_lat: CommunicationArea.destinationPointLat,
+    min_lon: parseLongitude(CommunicationArea.initialPointLng),
+    min_lat: parseLatitude(CommunicationArea.initialPointLat),
+    max_lon: parseLongitude(CommunicationArea.destinationPointLng),
+    max_lat: parseLatitude(CommunicationArea.destinationPointLat),
     colors,
     min_val: threshold_start.value,
     max_val: threshold_end.value,
@@ -1412,11 +1494,11 @@ const startRoundLossPrediction = (colors: string[]) => {
     rx_gain: drawLaunchSiteForm.rx_gain,
     trans_power: drawLaunchSiteForm.trans_power,
     diversity_order: drawLaunchSiteForm.diversity_order,
-    tx_lon: drawLaunchSiteForm.lng,
-    tx_lat: drawLaunchSiteForm.lat,
+    tx_lon: parseLongitude(drawLaunchSiteForm.lng),
+    tx_lat: parseLatitude(drawLaunchSiteForm.lat),
     freq: drawLaunchSiteForm.freq,
-    center_lon: CommunicationArea.centerPointLng,
-    center_lat: CommunicationArea.centerPointLat,
+    center_lon: parseLongitude(CommunicationArea.centerPointLng),
+    center_lat: parseLatitude(CommunicationArea.centerPointLat),
     radius_m: CommunicationArea.radius * 1000,
     colors,
     min_val: threshold_start.value,
@@ -1444,11 +1526,11 @@ const clickChildMenu = async (name: any, index: number) => {
           ...projectFields(),
           name: drawLaunchSiteForm.name,
           link_name: "主链路",
-          tx_lon: drawLaunchSiteForm.lng,
-          tx_lat: drawLaunchSiteForm.lat,
+          tx_lon: parseLongitude(drawLaunchSiteForm.lng),
+          tx_lat: parseLatitude(drawLaunchSiteForm.lat),
           tx_height: drawLaunchSiteForm.height ? drawLaunchSiteForm.height : 0,
-          rx_lon: SLPComputeForm.lng,
-          rx_lat: SLPComputeForm.lat,
+          rx_lon: parseLongitude(SLPComputeForm.lng),
+          rx_lat: parseLatitude(SLPComputeForm.lat),
           rx_height: SLPComputeForm.height,
           tx_gain: drawLaunchSiteForm.tx_gain,
           rx_gain: drawLaunchSiteForm.rx_gain,
@@ -1528,8 +1610,8 @@ const setSingleLinkFormData = (message: any) => {
   SLPCompute_id.value = message.id
   if (SLPComputeForm.lng && SLPComputeForm.lat) {
     $bus.emit('setSingleLink', {
-      startPoint: [drawLaunchSiteForm.lng, drawLaunchSiteForm.lat, drawLaunchSiteForm.height],
-      endPoint: [SLPComputeForm.lng, SLPComputeForm.lat, SLPComputeForm.height],
+      startPoint: [parseLongitude(drawLaunchSiteForm.lng), parseLatitude(drawLaunchSiteForm.lat), drawLaunchSiteForm.height],
+      endPoint: [parseLongitude(SLPComputeForm.lng), parseLatitude(SLPComputeForm.lat), SLPComputeForm.height],
       ...message
     });
   }
@@ -1559,8 +1641,8 @@ const setSingleLinkFormData = (message: any) => {
   linkageCalculationForm.rx_gain = drawLaunchSiteForm.rx_gain; //接受天线增益（dB）：
   linkageCalculationForm.freq = drawLaunchSiteForm.freq; //信号频率（MHz）：
   linkageCalculationForm.trans_power = drawLaunchSiteForm.trans_power; //发射功率（W）：
-  linkageCalculationForm.lng = drawLaunchSiteForm.lng; //发射站经度（°）：
-  linkageCalculationForm.lat = drawLaunchSiteForm.lat; //发射站纬度
+  linkageCalculationForm.lng = parseLongitude(drawLaunchSiteForm.lng); //发射站经度（°）：
+  linkageCalculationForm.lat = parseLatitude(drawLaunchSiteForm.lat); //发射站纬度
 
   // linkageCalculationForm.elapsed = message.elapsed;//时间
 
@@ -1574,8 +1656,8 @@ const setSingleLinkFormData = (message: any) => {
   ProfileForm.scatterer_height = Number(message.scatterer_height) || 0;
   ProfileForm.scatterer_lon = Number(message.scatterer_lon) || 0;
   ProfileForm.scatterer_lat = Number(message.scatterer_lat) || 0;
-  ProfileForm.tx_lng = Number(drawLaunchSiteForm.lng) || 0;
-  ProfileForm.tx_lat = Number(drawLaunchSiteForm.lat) || 0;
+  ProfileForm.tx_lng = parseLongitude(drawLaunchSiteForm.lng) || 0;
+  ProfileForm.tx_lat = parseLatitude(drawLaunchSiteForm.lat) || 0;
   ProfileForm.scatterer_distance = Number(message.scatterer_distance) || 0;
   ProfileForm.tx_barrier_distance = Number(message.tx_barrier_distance) || 0;
   ProfileForm.tx_barrier_height = Number(message.tx_barrier_height) || 0;
@@ -1588,6 +1670,7 @@ const setSingleLinkFormData = (message: any) => {
   ProfileForm.reliability = Number(message.reliability) || 0;
   ProfileForm.recv_power = Number(message.recv_power) || 0;
   if (!hasProfileReturn()) snapshotProfileReturn();
+  $bus.emit("workflowLinkAnalysisReady", true);
   showProfileDialog.value = true;
 
   visible.value = false;
@@ -1659,7 +1742,7 @@ const updateCircleAreaImg = (message: any) => {
   circleArea_tif_id.value = message.id;
   $bus.emit('setCircleAreaImg', {
     ...message,
-    centerPoint: [CommunicationArea.centerPointLng, CommunicationArea.centerPointLat],
+    centerPoint: [parseLongitude(CommunicationArea.centerPointLng), parseLatitude(CommunicationArea.centerPointLat)],
     radius: CommunicationArea.radius
   })
   showProgressBar.value = false
@@ -1678,8 +1761,8 @@ const updateRectangleAreaImg = (message: any) => {
   rectangleArea_tif_id.value = message.id;
   $bus.emit('setRectangleAreaImg', {
     ...message,
-    initialPoint: [CommunicationArea.initialPointLng, CommunicationArea.initialPointLat],
-    destinationPoint: [CommunicationArea.destinationPointLng, CommunicationArea.destinationPointLat],
+    initialPoint: [parseLongitude(CommunicationArea.initialPointLng), parseLatitude(CommunicationArea.initialPointLat)],
+    destinationPoint: [parseLongitude(CommunicationArea.destinationPointLng), parseLatitude(CommunicationArea.destinationPointLat)],
   })
   showProgressBar.value = false
   lossMapVisible.value = true
@@ -1809,12 +1892,20 @@ const tableRowClassName = ({ rowIndex }: { rowIndex: number }) => {
 const tableWrapRef = ref(null);
 const handleExportExcel = async () => {
   try {
-    const res = await exportExcel({
+    const data = await exportExcel({
       id: CommunicationArea.activeName === "Rectangle" ? rectangleArea_tif_id.value : circleArea_tif_id.value,
       cluster_stats: tableData.value,
-    })
-    const excelFileUrl = res.file_url
-    window.open(excelFileUrl)
+    });
+    // 错误时后端返回 JSON，responseType=blob 下需先识别
+    if (data instanceof Blob && data.type && data.type.includes("application/json")) {
+      const text = await data.text();
+      const err = JSON.parse(text);
+      ElMessage.error(err.error || err.message || "导出失败");
+      return;
+    }
+    const blob = data instanceof Blob ? data : new Blob([data]);
+    const stamp = new Date().toISOString().replace(/[-:TZ.]/g, "").slice(0, 14);
+    saveAs(blob, `stations_${stamp}.xlsx`);
   } catch (error) {
     ElMessage.error("导出失败");
   }
@@ -2033,9 +2124,9 @@ const recolorLossOverlay = async (colors: string[], minVal: number, maxVal: numb
     png_image_url: displayUrl,
     tif_image_url: displayUrl,
     type: overlay.isCircle ? "round" : "Rectangle",
-    initialPoint: [CommunicationArea.initialPointLng, CommunicationArea.initialPointLat],
-    destinationPoint: [CommunicationArea.destinationPointLng, CommunicationArea.destinationPointLat],
-    centerPoint: [CommunicationArea.centerPointLng, CommunicationArea.centerPointLat],
+    initialPoint: [parseLongitude(CommunicationArea.initialPointLng), parseLatitude(CommunicationArea.initialPointLat)],
+    destinationPoint: [parseLongitude(CommunicationArea.destinationPointLng), parseLatitude(CommunicationArea.destinationPointLat)],
+    centerPoint: [parseLongitude(CommunicationArea.centerPointLng), parseLatitude(CommunicationArea.centerPointLat)],
     radius: CommunicationArea.radius,
   });
   lossMapVisible.value = true;
@@ -2119,6 +2210,7 @@ onBeforeUnmount(() => {
   $bus.off('openLaunchSiteConfig', onOpenLaunchSiteConfig)
   $bus.off('openSLPComputedDialog', onOpenSLPComputedDialog)
   $bus.off('openProfileExtract', onOpenProfileExtract)
+  $bus.off('openLinkAnalysis', onOpenLinkAnalysis)
   $bus.off('openCoverageDialog', onOpenCoverageDialog)
   $bus.off('runTransmissionLossPrediction', onRunTransmissionLossPrediction)
   $bus.off('openClusterDialog', onOpenClusterDialog)
@@ -2272,8 +2364,8 @@ const initstartEndPoint = (query: any) => {
   drawLaunchSiteForm.point_name = query.tx_station_name
   drawLaunchSiteForm.comm_rate = query.comm_rate
   // 接收点配置
-  SLPComputeForm.lng = query.rx_lon
-  SLPComputeForm.lat = query.rx_lat
+  SLPComputeForm.lng = formatLongitude(query.rx_lon)
+  SLPComputeForm.lat = formatLatitude(query.rx_lat)
   SLPComputeForm.height = query.rx_height
   SLPComputeForm.point_name = query.rx_station_name
 
@@ -2320,12 +2412,18 @@ const initstartEndPoint = (query: any) => {
 
   // 散射通信区覆盖区域配置
   CommunicationArea.activeName = query.coverage_type === 'rectangle' ? 'Rectangle' : 'Round';
-  CommunicationArea.initialPointLng = query.rectangle_min_longitude
-  CommunicationArea.initialPointLat = query.rectangle_min_latitude
-  CommunicationArea.destinationPointLng = query.rectangle_max_longitude
-  CommunicationArea.destinationPointLat = query.rectangle_max_latitude
-  CommunicationArea.centerPointLng = query.circle_center_longitude
-  CommunicationArea.centerPointLat = query.circle_center_latitude
+  CommunicationArea.initialPointLng = query.rectangle_min_longitude != null && query.rectangle_min_longitude !== ''
+    ? formatLongitude(query.rectangle_min_longitude) : ''
+  CommunicationArea.initialPointLat = query.rectangle_min_latitude != null && query.rectangle_min_latitude !== ''
+    ? formatLatitude(query.rectangle_min_latitude) : ''
+  CommunicationArea.destinationPointLng = query.rectangle_max_longitude != null && query.rectangle_max_longitude !== ''
+    ? formatLongitude(query.rectangle_max_longitude) : ''
+  CommunicationArea.destinationPointLat = query.rectangle_max_latitude != null && query.rectangle_max_latitude !== ''
+    ? formatLatitude(query.rectangle_max_latitude) : ''
+  CommunicationArea.centerPointLng = query.circle_center_longitude != null && query.circle_center_longitude !== ''
+    ? formatLongitude(query.circle_center_longitude) : ''
+  CommunicationArea.centerPointLat = query.circle_center_latitude != null && query.circle_center_latitude !== ''
+    ? formatLatitude(query.circle_center_latitude) : ''
   CommunicationArea.radius = query.circle_radius ? query.circle_radius / 1000 : ''
 
 
@@ -2366,9 +2464,10 @@ const initstartEndPoint = (query: any) => {
   }
   console.log('CommunicationAreaProhibited', CommunicationAreaProhibited);
 
-
-
-
+  $bus.emit(
+    "workflowLinkAnalysisReady",
+    !!(hasFilled(query.image_path) || hasFilled(query.distance) || hasFilled(query.distance_km) || hasFilled(linkageCalculationForm.distance))
+  );
 }
 let SingleLinkMain = null
 
@@ -2409,7 +2508,7 @@ const handleLinkageCalculation = async (row: any) => {
   } else if (relayTableData.value.length) {
     startPoint = [relayTableData.value[handleRelayIndex.value].longitude, relayTableData.value[handleRelayIndex.value].latitude]
   } else {
-    startPoint = [drawLaunchSiteForm.lng, drawLaunchSiteForm.lat]
+    startPoint = [parseLongitude(drawLaunchSiteForm.lng), parseLatitude(drawLaunchSiteForm.lat)]
   }
   $bus.emit("sendMessage", {
     ...projectFields(),
@@ -2731,6 +2830,8 @@ const restoreProjectFromId = async (projectId) => {
   try {
     const project: any = await getProject(projectId);
     currentProjectId.value = project.id;
+    railFullUnlock.value = true;
+    $bus.emit("workflowRailFull", true);
     projectOpen.value = true;
     isSelectStartPointOver.value = true;
 
@@ -2815,7 +2916,14 @@ const restoreProjectFromId = async (projectId) => {
         duration: 1.2,
       });
     }
+    emitWorkflowPointState();
+    $bus.emit(
+      "workflowLinkAnalysisReady",
+      !!(hasFilled(linkageCalculationForm.distance) || hasFilled(ProfileForm.image_url) || hasFilled(linkageCalculationForm.image_url))
+    );
   } catch (error) {
+    railFullUnlock.value = false;
+    $bus.emit("workflowRailFull", false);
     ElMessage.error("打开工程失败");
   }
 };
@@ -2870,6 +2978,8 @@ onMounted(async () => {
       await restoreProjectFromId(query.project);
     } else if (query.type) {
       // 如果 type === 'singleLink' 则进行单链规划回显
+      railFullUnlock.value = true;
+      $bus.emit("workflowRailFull", true);
       projectOpen.value = true
       isSelectStartPointOver.value = true
       if (query.type === 'singleLink') {
@@ -3017,16 +3127,17 @@ onMounted(async () => {
 @use "@/styles/gotham-panel.scss" as *;
 
 .results-panel :deep(.el-dropdown-menu) {
-  background: rgba(22, 30, 40, 0.96);
-  border: 1px solid rgba(180, 200, 220, 0.18);
+  background: rgba(12, 21, 16, 0.96);
+  border: 1px solid rgba(64, 73, 69, 0.4);
 }
 
 .results-panel :deep(.el-dropdown-menu__item) {
-  color: rgba(235, 240, 245, 0.92);
+  color: #dae5dc;
+  font-family: Inter, "Noto Sans SC", sans-serif;
 }
 
 .results-panel :deep(.el-dropdown-menu__item:hover) {
-  background: rgba(0, 162, 255, 0.12);
-  color: #ffffff;
+  background: rgba(157, 223, 46, 0.12);
+  color: #9ddf2e;
 }
 </style>

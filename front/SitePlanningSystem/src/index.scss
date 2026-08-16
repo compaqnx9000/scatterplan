@@ -4,21 +4,22 @@
 }
 
 :root {
-  --gotham-bg: #07090c;
-  --gotham-bg-elevated: #0d1117;
-  --gotham-panel: rgba(10, 14, 20, 0.92);
-  --gotham-panel-solid: #0f141c;
-  --gotham-border: rgba(232, 226, 210, 0.12);
-  --gotham-border-strong: rgba(232, 226, 210, 0.22);
-  --gotham-text: #e8e2d2;
-  --gotham-text-muted: #8b8790;
-  --gotham-text-dim: #5c5863;
-  --gotham-accent: #d4a017;
-  --gotham-accent-soft: rgba(212, 160, 23, 0.15);
-  --gotham-accent-hover: #e8b52a;
+  --gotham-bg: #121412;
+  --gotham-bg-elevated: #181a18;
+  --gotham-panel: rgba(24, 26, 24, 0.82);
+  --gotham-panel-solid: #1a1d1a;
+  --gotham-border: rgba(255, 255, 255, 0.08);
+  --gotham-border-strong: rgba(255, 255, 255, 0.16);
+  --gotham-text: #ffffff;
+  --gotham-text-muted: #9ca3af;
+  --gotham-text-dim: #6b7280;
+  --gotham-accent: #a3e635;
+  --gotham-accent-soft: rgba(163, 230, 53, 0.16);
+  --gotham-accent-hover: #b6f04a;
+  --gotham-accent-ink: #121412;
   --gotham-danger: #c45c4a;
   --gotham-success: #5a9e6f;
-  --gotham-info: #6a8a9e;
+  --gotham-info: #9ca3af;
   --gotham-rail-width: 56px;
   --gotham-sidebar-width: 280px;
   --font-ui: 'IBM Plex Sans', 'Noto Sans SC', sans-serif;
@@ -47,10 +48,43 @@ textarea,
   -webkit-user-select: text;
 }
 
+input::selection,
+textarea::selection {
+  background: #9ddf2e;
+  color: #213600;
+}
+
+input::-moz-selection,
+textarea::-moz-selection {
+  background: #9ddf2e;
+  color: #213600;
+}
+
 html,
 body {
   font-family: var(--font-ui);
   font-size: 16px;
+}
+
+.material-symbols-outlined {
+  font-family: "Material Symbols Outlined";
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-break: normal;
+  word-wrap: normal;
+  direction: ltr;
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+  -webkit-font-smoothing: antialiased;
+}
+
+.icon-fill {
+  font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
 }
 
 /* Element Plus 变量：覆盖其 index.css 里 :root 的 14px / Helvetica */
@@ -190,9 +224,13 @@ textarea {
 // 滑块
 ::-webkit-scrollbar-thumb {
   border-radius: 10px;
-  background-color: #14d4f4;
+  background-color: rgba(157, 223, 46, 0.55);
   // height: 50px; // 整体设了宽高后，这里宽高是无效的
   // width: 50px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(157, 223, 46, 0.75);
 }
 
 // 轨道
@@ -974,7 +1012,7 @@ textarea {
 
 /* =========================
  * Gotham form typography
- * 全局表单统一：IBM Plex Mono / 12px
+ * 全局表单统一字体；字号由各组件自行控制（不再强制 12px !important）
  * ========================= */
 .el-form,
 .el-form-item,
@@ -985,9 +1023,8 @@ textarea {
 .login-modal__form,
 .custom-dialog-wrapper,
 .dark-dialog {
-  font-family: var(--font-mono) !important;
+  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-  font-size: var(--form-font-size) !important;
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
 }
@@ -1000,8 +1037,7 @@ textarea {
 .login-modal *,
 .custom-dialog-wrapper *,
 .dark-dialog * {
-  font-family: var(--font-mono) !important;
-  font-size: var(--form-font-size) !important;
+  font-family: var(--font-mono);
   line-height: 1.45;
 }
 
@@ -1015,8 +1051,7 @@ textarea {
 .station-config__clear,
 .form_value,
 .tabs-header h3 {
-  font-family: var(--font-mono) !important;
-  font-size: var(--form-label-size) !important;
+  font-family: var(--font-mono);
 }
 
 .el-input,
@@ -1034,19 +1069,11 @@ textarea {
 .el-checkbox__label,
 .el-button,
 .el-switch__label {
-  font-family: var(--font-mono) !important;
-  font-size: var(--form-font-size) !important;
-}
-
-.el-input__inner,
-.el-textarea__inner,
-.el-select__selected-item,
-.el-select__placeholder {
-  font-size: var(--form-font-size) !important;
+  font-family: var(--font-mono);
 }
 
 .el-form-item__label {
-  font-size: var(--form-label-size) !important;
+  font-size: var(--form-label-size);
   color: var(--gotham-text-muted);
 }
 
@@ -1078,7 +1105,6 @@ textarea {
 .el-select__popper,
 .el-select-dropdown,
 .el-popper.el-select__popper,
-.station-config-select-dropdown,
 .el-cascader__dropdown,
 .el-autocomplete-suggestion,
 .el-dropdown__popper,
@@ -1099,7 +1125,6 @@ body > .el-popper .el-select-dropdown,
 body > .el-popper .el-scrollbar,
 .el-select__popper .el-select-dropdown__item,
 .el-select-dropdown .el-select-dropdown__item,
-.station-config-select-dropdown .el-select-dropdown__item,
 .el-select-dropdown__item,
 .el-select-dropdown__item span,
 .el-cascader-node__label,
@@ -1108,6 +1133,52 @@ body > .el-popper .el-scrollbar,
   font-family: 'IBM Plex Mono', 'Cascadia Mono', 'Noto Sans SC', monospace !important;
   font-size: 12px !important;
   line-height: 1.45 !important;
+}
+
+/* 站点配置下拉：与输入框一致 Inter 16px + 深绿主题 */
+.station-config-select-dropdown.el-popper,
+.station-config-select-dropdown {
+  --el-font-size-base: 16px;
+  --el-select-font-size: 16px;
+  --el-bg-color-overlay: #0c1510;
+  --el-border-color-light: rgba(64, 73, 69, 0.45);
+  --el-fill-color-light: rgba(157, 223, 46, 0.12);
+  --el-text-color-regular: #dae5dc;
+  background: #0c1510 !important;
+  border: 1px solid rgba(64, 73, 69, 0.45) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45) !important;
+}
+
+.station-config-select-dropdown .el-select-dropdown__list,
+.station-config-select-dropdown .el-scrollbar,
+.station-config-select-dropdown .el-select-dropdown__wrap {
+  background: #0c1510 !important;
+}
+
+.station-config-select-dropdown .el-popper__arrow::before {
+  background: #0c1510 !important;
+  border: 1px solid rgba(64, 73, 69, 0.45) !important;
+}
+
+.station-config-select-dropdown .el-select-dropdown__item,
+.station-config-select-dropdown .el-select-dropdown__item span {
+  font-family: Inter, "Noto Sans SC", sans-serif !important;
+  font-size: 16px !important;
+  line-height: 20px !important;
+  color: #dae5dc !important;
+  background: transparent !important;
+}
+
+.station-config-select-dropdown .el-select-dropdown__item.is-hovering,
+.station-config-select-dropdown .el-select-dropdown__item:hover {
+  background: rgba(45, 55, 49, 0.85) !important;
+  color: #ffffff !important;
+}
+
+.station-config-select-dropdown .el-select-dropdown__item.is-selected {
+  color: #9ddf2e !important;
+  font-weight: 600 !important;
+  background: rgba(157, 223, 46, 0.1) !important;
 }
 
 .el-select-dropdown .el-select-dropdown__item,
@@ -1196,20 +1267,20 @@ body > .el-popper .el-scrollbar,
 }
 
 .el-message-box__btns .el-button--default {
-  background: rgba(18, 24, 31, 0.7) !important;
+  background: rgba(12, 14, 12, 0.7) !important;
   border: 1px solid rgba(180, 200, 220, 0.22) !important;
   color: rgba(235, 240, 245, 0.9) !important;
 }
 
 .el-message-box__btns .el-button--default:hover {
-  border-color: rgba(0, 162, 255, 0.45) !important;
+  border-color: rgba(163, 230, 53, 0.45) !important;
   color: #ffffff !important;
 }
 
 .el-message-box__btns .el-button--primary {
-  background: linear-gradient(90deg, #00a2ff 0%, #3b82f6 100%) !important;
+  background: #a3e635 !important;
   border: none !important;
-  color: #ffffff !important;
+  color: #121412 !important;
 }
 
 .el-message-box__btns .el-button--primary:hover {
@@ -1223,7 +1294,7 @@ body > .el-popper .el-scrollbar,
   --el-message-text-color: rgba(235, 240, 245, 0.92);
   padding: 10px 16px !important;
   min-height: 40px;
-  background: rgba(26, 34, 44, 0.78) !important;
+  background: rgba(24, 26, 24, 0.86) !important;
   border: 1px solid rgba(180, 200, 220, 0.18) !important;
   border-radius: 12px !important;
   box-shadow:
@@ -1275,11 +1346,16 @@ body > .el-popper .el-scrollbar,
 }
 
 .el-message--info {
-  border-color: rgba(0, 162, 255, 0.35) !important;
+  border-color: rgba(163, 230, 53, 0.35) !important;
 }
 
 .el-message--info .el-message__icon {
-  color: #7ec8ff !important;
+  color: #bef264 !important;
+}
+
+.el-switch.is-checked .el-switch__core {
+  background-color: #a3e635 !important;
+  border-color: #a3e635 !important;
 }
 
 /* 站点配置：校验失败不显示文案，控件晃动提示 */
@@ -1313,4 +1389,29 @@ body > .el-popper .el-scrollbar,
 
 .field-shake {
   animation: field-shake 0.42s ease;
+}
+
+/* 表格截断悬停：完整内容（必须 append-to body，避免被面板 overflow 裁切） */
+.gotham-table-tooltip.el-popper,
+.el-popper.gotham-table-tooltip {
+  z-index: 5000 !important;
+  max-width: min(520px, 80vw);
+  padding: 8px 12px !important;
+  background: rgba(12, 21, 16, 0.98) !important;
+  border: 1px solid rgba(64, 73, 69, 0.55) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+  color: #dae5dc !important;
+  font-family: Inter, "Noto Sans SC", sans-serif !important;
+  font-size: 16px !important;
+  font-weight: 400 !important;
+  line-height: 1.45 !important;
+  word-break: break-all;
+  white-space: normal !important;
+  pointer-events: auto;
+}
+
+.gotham-table-tooltip.el-popper .el-popper__arrow::before {
+  background: rgba(12, 21, 16, 0.98) !important;
+  border: 1px solid rgba(64, 73, 69, 0.55) !important;
 }

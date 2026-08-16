@@ -7,19 +7,61 @@
       :style="panelStyle"
     >
       <div class="station-config__panel">
+        <div class="station-config__edge"></div>
         <div class="station-config__header" @mousedown="startDrag">
-          <div class="station-config__title">单链路计算配置</div>
-          <button class="station-config__close" type="button" title="关闭" @click="setVisible(false)" @mousedown.stop>
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="M6.4 6.4 17.6 17.6M17.6 6.4 6.4 17.6"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-              />
-            </svg>
-          </button>
+          <div class="station-config__heading">
+            <div class="station-config__badge">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M12 3.2c-3.4 0-6.2 2.7-6.2 6.1 0 4.5 5.4 10.4 5.7 10.7l.5.5.5-.5c.3-.3 5.7-6.2 5.7-10.7 0-3.4-2.8-6.1-6.2-6.1Zm0 8.4a2.3 2.3 0 1 1 0-4.6 2.3 2.3 0 0 1 0 4.6Z"
+                  fill="currentColor"
+                />
+              </svg>
+            </div>
+            <div>
+              <h2 class="station-config__title">单链路计算配置</h2>
+              <p class="station-config__subtitle">Configure receive site for single-link analysis.</p>
+            </div>
+          </div>
+          <div class="station-config__header-actions">
+            <button class="station-config__reset" type="button" title="重置" @click="handleReset" @mousedown.stop>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M7.2 7.2a6.8 6.8 0 1 1 0 9.6"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linecap="round"
+                />
+                <path
+                  d="M7.2 3.8v4.2H11.4"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              重置
+            </button>
+            <button
+              class="station-config__icon-btn station-config__icon-btn--close"
+              type="button"
+              title="关闭"
+              @click="setVisible(false)"
+              @mousedown.stop
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M6.4 6.4 17.6 17.6M17.6 6.4 6.4 17.6"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
 
         <el-form
@@ -31,72 +73,66 @@
           require-asterisk-position="right"
           :show-message="false"
         >
-          <div class="station-config__columns station-config__columns--single">
+          <div class="station-config__body">
             <section class="station-config__card">
-              <h3 class="station-config__card-title">接收站点</h3>
+              <div class="station-config__section-head">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M12 3.2c-3.4 0-6.2 2.7-6.2 6.1 0 4.5 5.4 10.4 5.7 10.7l.5.5.5-.5c.3-.3 5.7-6.2 5.7-10.7 0-3.4-2.8-6.1-6.2-6.1Zm0 8.4a2.3 2.3 0 1 1 0-4.6 2.3 2.3 0 0 1 0 4.6Z"
+                    fill="currentColor"
+                  />
+                </svg>
+                <h3>Receive Site</h3>
+              </div>
 
-              <el-form-item label="站点名称" prop="point_name">
-                <el-input v-model="SLPComputeForm.point_name" placeholder="请输入" clearable />
-              </el-form-item>
+              <div class="station-config__site-fields">
+                <el-form-item class="station-config__name-item" label="站点名称" prop="point_name">
+                  <el-input v-model="SLPComputeForm.point_name" placeholder="请输入站点名称" />
+                </el-form-item>
 
-              <el-form-item label="坐标" prop="coordinate">
                 <div class="station-config__coord-row">
-                  <el-input :model-value="coordDisplay" placeholder="经度, 纬度" readonly />
-                  <button
-                    class="station-config__map-btn"
-                    type="button"
-                    title="地图选点"
-                    @click="drawPoint('SLPCompute')"
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path
-                        d="M12 3.2c-3.4 0-6.2 2.7-6.2 6.1 0 4.5 5.4 10.4 5.7 10.7l.5.5.5-.5c.3-.3 5.7-6.2 5.7-10.7 0-3.4-2.8-6.1-6.2-6.1Zm0 8.4a2.3 2.3 0 1 1 0-4.6 2.3 2.3 0 0 1 0 4.6Z"
-                        fill="currentColor"
-                      />
-                    </svg>
-                  </button>
+                  <el-form-item label="经度" prop="lng">
+                    <el-input v-model="SLPComputeForm.lng" placeholder="请输入" />
+                  </el-form-item>
+                  <el-form-item label="纬度" prop="lat">
+                    <el-input v-model="SLPComputeForm.lat" placeholder="请输入" />
+                  </el-form-item>
                 </div>
-              </el-form-item>
 
-              <div class="station-config__row-2">
-                <el-form-item label="站点经度（°）" prop="lng">
-                  <el-input v-model="SLPComputeForm.lng" placeholder="请输入" clearable />
-                </el-form-item>
-                <el-form-item label="站点纬度（°）" prop="lat">
-                  <el-input v-model="SLPComputeForm.lat" placeholder="请输入" clearable />
-                </el-form-item>
+                <button class="station-config__map-pick" type="button" @click="drawPoint('SLPCompute')">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      d="M12 3.2c-3.4 0-6.2 2.7-6.2 6.1 0 4.5 5.4 10.4 5.7 10.7l.5.5.5-.5c.3-.3 5.7-6.2 5.7-10.7 0-3.4-2.8-6.1-6.2-6.1Zm0 8.4a2.3 2.3 0 1 1 0-4.6 2.3 2.3 0 0 1 0 4.6Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                  <span>地图选点</span>
+                </button>
               </div>
             </section>
           </div>
         </el-form>
 
         <div class="station-config__footer">
-          <div class="station-config__footer-left">
-            <button class="station-config__btn station-config__btn--ghost" type="button" @click="handleReset">
-              重置
-            </button>
-            <button class="station-config__btn station-config__btn--ghost" type="button" @click="setVisible(false)">
-              取消
-            </button>
-          </div>
+          <button class="station-config__btn station-config__btn--ghost" type="button" @click="setVisible(false)">
+            取消
+          </button>
           <button
             class="station-config__btn station-config__btn--primary"
             type="button"
             @click="handleConfirmSLPComputed(SLPCompute)"
           >
-            <span>确认</span>
-            <span class="station-config__btn-arrow">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M9.5 6.5 15.5 12l-6 5.5"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </span>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M5.4 12.4 10 17l8.6-9.2"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            确认
           </button>
         </div>
       </div>
@@ -108,7 +144,14 @@
 //@ts-nocheck
 
 import { computed, getCurrentInstance, nextTick, onBeforeUnmount, ref, watch } from "vue";
-import { validateLongitude, validateLatitude } from "@/view/home/service/rules";
+import {
+  validateLongitude,
+  validateLatitude,
+  formatLongitude,
+  formatLatitude,
+  parseLongitude,
+  parseLatitude,
+} from "@/view/home/service/rules";
 import { shakeInvalidFormFields } from "@/view/home/service/formShake";
 
 let currentInstance = getCurrentInstance();
@@ -144,7 +187,7 @@ const panelRef = ref<HTMLElement | null>(null);
 const panelPos = ref({ x: 0, y: 0 });
 const dragging = ref(false);
 const dragOffset = ref({ x: 0, y: 0 });
-const PANEL_WIDTH = 520;
+const PANEL_WIDTH = 560;
 
 const panelStyle = computed(() => ({
   left: `${panelPos.value.x}px`,
@@ -205,15 +248,6 @@ watch(
   }
 );
 
-const coordDisplay = computed(() => {
-  const lng = props.SLPComputeForm.lng;
-  const lat = props.SLPComputeForm.lat;
-  if (lng === "" || lng === null || lng === undefined || lat === "" || lat === null || lat === undefined) {
-    return "";
-  }
-  return `${lng}, ${lat}`;
-});
-
 const pendingPickRestore = ref(false);
 let pickEscHandler: ((e: KeyboardEvent) => void) | null = null;
 
@@ -263,11 +297,15 @@ watch(
   }
 );
 
+const applyPoint = (lng: any, lat: any, alt: any) => {
+  props.SLPComputeForm.lng = formatLongitude(lng);
+  props.SLPComputeForm.lat = formatLatitude(lat);
+  props.SLPComputeForm.height = alt;
+};
+
 const updateSLPComputeData = (graphic: mars3d.graphic.BaseGraphic) => {
   if (graphic && graphic.name === "SLPCompute") {
-    props.SLPComputeForm.lng = graphic.point.lng;
-    props.SLPComputeForm.lat = graphic.point.lat;
-    props.SLPComputeForm.height = graphic.point.alt;
+    applyPoint(graphic.point.lng, graphic.point.lat, graphic.point.alt);
   }
 };
 
@@ -275,9 +313,7 @@ $bus.on("drawSLPPointMsg", updateSLPComputeData);
 $bus.on("drawPointEnd", onDrawPointEnd);
 
 const updateSLPComputePoint = (position: mars3d.LngLatPoint) => {
-  props.SLPComputeForm.lng = position.lng;
-  props.SLPComputeForm.lat = position.lat;
-  props.SLPComputeForm.height = position.alt;
+  applyPoint(position.lng, position.lat, position.alt);
 };
 
 $bus.on("changeSLPPoint", updateSLPComputePoint);
@@ -296,10 +332,12 @@ const handleConfirmSLPComputed = async (formEl: any) => {
   if (!formEl) return;
   await formEl.validate((valid) => {
     if (valid) {
+      const lng = parseLongitude(props.SLPComputeForm.lng);
+      const lat = parseLatitude(props.SLPComputeForm.lat);
       $bus.emit("setSLPCompute", {
         type: "SLPCompute",
-        lng: props.SLPComputeForm.lng,
-        lat: props.SLPComputeForm.lat,
+        lng,
+        lat,
         height: props.SLPComputeForm.height,
       });
       emit("update:visible", false);
@@ -326,47 +364,136 @@ onBeforeUnmount(() => {
 .station-config {
   position: fixed;
   z-index: 1200;
-  pointer-events: all;
+  width: min(560px, calc(100vw - 48px));
   box-sizing: border-box;
+  pointer-events: all;
 
-  *,
-  *::before,
-  *::after {
+  &__panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 0;
+    overflow: hidden;
+    border-radius: 0.75rem;
+    background: rgba(12, 21, 16, 0.85);
+    border: 1px solid rgba(64, 73, 69, 0.3);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    color: #dae5dc;
     box-sizing: border-box;
   }
 
-  &__panel {
-    width: 100%;
-    padding: 22px 24px 20px;
-    border-radius: 14px;
-    background: rgba(26, 34, 44, 0.72);
-    border: 1px solid rgba(180, 200, 220, 0.18);
-    box-shadow:
-      0 18px 48px rgba(0, 0, 0, 0.38),
-      inset 0 1px 0 rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(22px) saturate(1.15);
-    -webkit-backdrop-filter: blur(22px) saturate(1.15);
-    color: #ffffff;
-    overflow: hidden;
+  &__edge {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.1), transparent);
+    pointer-events: none;
   }
 
   &__header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 18px;
+    padding: 20px 24px;
+    border-bottom: 1px solid rgba(64, 73, 69, 0.2);
+    background: rgba(45, 55, 49, 0.5);
     cursor: move;
     user-select: none;
+    flex-shrink: 0;
+  }
+
+  &__heading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  &__badge {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    background: rgba(45, 90, 76, 0.3);
+    border: 1px solid rgba(161, 209, 191, 0.2);
+    color: #a1d1bf;
+
+    svg {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
   }
 
   &__title {
-    font-size: 20px;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    color: #ffffff;
+    margin: 0;
+    font-family: Inter, sans-serif !important;
+    font-size: 20px !important;
+    font-weight: 600 !important;
+    line-height: 28px;
+    color: #ffffff !important;
+    word-break: normal;
   }
 
-  &__close {
+  &__subtitle {
+    margin: 4px 0 0;
+    font-family: Inter, sans-serif !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
+    line-height: 18px;
+    color: #c0c8c3 !important;
+    word-break: normal;
+    white-space: nowrap;
+  }
+
+  &__header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  &__reset {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 28px;
+    padding: 0 10px;
+    border: 1px solid rgba(64, 73, 69, 0.5);
+    border-radius: 0.5rem;
+    background: transparent;
+    color: #c0c8c3;
+    font-family: Inter, sans-serif !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    white-space: nowrap;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+
+    svg {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+
+    &:hover {
+      border-color: rgba(163, 230, 53, 0.45);
+      color: #9ddf2e;
+      background: rgba(157, 223, 46, 0.08);
+    }
+  }
+
+  &__icon-btn {
     width: 32px;
     height: 32px;
     flex-shrink: 0;
@@ -390,228 +517,311 @@ onBeforeUnmount(() => {
     }
   }
 
-  &__columns {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 14px;
-    width: 100%;
-
-    &--single {
-      grid-template-columns: minmax(0, 1fr);
-    }
-  }
-
-  &__row-2 {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 12px;
-    width: 100%;
+  &__body {
+    padding: 20px 24px;
   }
 
   &__card {
     width: 100%;
     min-width: 0;
-    padding: 16px 14px 8px;
-    border-radius: 10px;
-    background: rgba(18, 24, 31, 0.55);
-    border: 1px solid rgba(255, 255, 255, 0.05);
   }
 
-  &__card-title {
-    margin: 0 0 14px;
-    font-size: 12px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.95);
-  }
-
-  &__coord-row {
+  &__section-head {
     display: flex;
     align-items: center;
     gap: 8px;
-    width: 100%;
-    min-width: 0;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(64, 73, 69, 0.2);
+    color: #99d4ae;
 
-    :deep(.el-input) {
-      flex: 1;
-      min-width: 0;
-      width: auto !important;
+    svg {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+
+    h3 {
+      margin: 0;
+      font-family: Inter, sans-serif !important;
+      font-size: 12px !important;
+      font-weight: 600 !important;
+      line-height: 16px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #ffffff !important;
+      word-break: normal;
     }
   }
 
-  &__map-btn {
-    width: 36px;
-    height: 36px;
-    flex-shrink: 0;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    background: rgba(26, 34, 44, 0.72);
-    color: #8ec8ff;
-    cursor: pointer;
+  &__site-fields {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  &__name-item {
+    width: 100% !important;
+    max-width: 100% !important;
+
+    :deep(.el-form-item__content),
+    :deep(.el-input),
+    :deep(.el-input__wrapper) {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+  }
+
+  &__coord-row {
+    --coord-h: 42px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+    column-gap: 12px;
+    width: 100% !important;
+    max-width: 100%;
+    margin-bottom: 10px;
+
+    :deep(.el-form-item) {
+      margin-bottom: 0 !important;
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+
+    :deep(.el-form-item__content),
+    :deep(.el-input),
+    :deep(.el-input__wrapper) {
+      width: 100% !important;
+      max-width: 100% !important;
+      line-height: normal;
+    }
+
+    :deep(.el-input),
+    :deep(.el-input__wrapper) {
+      height: var(--coord-h) !important;
+      min-height: var(--coord-h) !important;
+      max-height: var(--coord-h) !important;
+    }
+
+    :deep(.el-input__wrapper) {
+      box-sizing: border-box !important;
+      padding: 8px 12px !important;
+      background: #07100b !important;
+      background-color: #07100b !important;
+      border: 1px solid rgba(64, 73, 69, 0.5) !important;
+      outline: none !important;
+      border-radius: 0.5rem !important;
+      box-shadow: none !important;
+    }
+
+    :deep(.el-input__wrapper.is-focus),
+    :deep(.el-input__wrapper.is-focus:hover) {
+      border-color: #9ddf2e !important;
+      border-width: 2px !important;
+      outline: none !important;
+      box-shadow: none !important;
+      background: #07100b !important;
+    }
+
+    :deep(.el-input__inner) {
+      font-family: Inter, "Noto Sans SC", sans-serif !important;
+      font-size: 16px !important;
+      font-weight: 400 !important;
+      line-height: 20px !important;
+      color: #ffffff !important;
+      height: 100% !important;
+      white-space: pre !important;
+      word-break: keep-all !important;
+      letter-spacing: 0 !important;
+    }
+  }
+
+  &__map-pick {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 4px;
+    box-sizing: border-box;
+    height: 24px;
+    margin: 0;
+    padding: 0 14px;
+    border-radius: 9999px;
+    border: 1px dashed #8a938e;
+    background: transparent;
+    color: #c0c8c3;
+    font-family: Inter, "Noto Sans SC", sans-serif !important;
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    line-height: 1 !important;
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
 
     svg {
-      width: 18px;
-      height: 18px;
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+
+    span {
+      transform: translateY(1px);
     }
 
     &:hover {
-      background: #303841;
-      color: #b7dcff;
+      border-color: #dae5dc;
+      color: #dae5dc;
+      background: rgba(45, 55, 49, 0.35);
     }
   }
 
   &__footer {
-    display: flex;
+    display: flex !important;
     align-items: center;
-    justify-content: space-between;
-    margin-top: 18px;
-    gap: 12px;
+    justify-content: flex-end;
+    gap: 16px;
+    flex: 0 0 auto !important;
     width: 100%;
-    min-width: 0;
-  }
-
-  &__footer-left {
-    display: flex;
-    gap: 10px;
-    flex-shrink: 0;
+    box-sizing: border-box;
+    margin: 0 !important;
+    padding: 16px 24px !important;
+    border-top: 1px solid rgba(64, 73, 69, 0.2) !important;
+    background: rgba(45, 55, 49, 0.3) !important;
   }
 
   &__btn {
     border: none;
     cursor: pointer;
-    font-size: 12px;
-    color: #fff;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    transition: transform 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease;
+    font-family: Inter, sans-serif !important;
+    font-size: 14px !important;
+    word-break: normal;
+    transition: all 0.2s ease;
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
 
     &--ghost {
-      min-width: 72px;
-      height: 40px;
-      padding: 0 16px;
-      border-radius: 8px;
-      background: rgba(38, 44, 53, 0.92);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: rgba(235, 240, 245, 0.92);
+      min-width: 88px;
+      padding: 10px 20px;
+      border-radius: 0.5rem;
+      background: transparent;
+      border: 1px solid #404945;
+      color: #c0c8c3 !important;
+      font-weight: 500;
 
       &:hover {
-        background: rgba(48, 56, 66, 0.95);
+        color: #ffffff !important;
+        background: rgba(45, 55, 49, 0.5);
       }
     }
 
     &--primary {
       min-width: 120px;
-      height: 44px;
-      padding: 0 16px 0 20px;
-      border-radius: 999px;
-      background: linear-gradient(90deg, #00a2ff 0%, #3b82f6 100%);
-      box-shadow: 0 8px 24px rgba(0, 162, 255, 0.38);
-      font-weight: 600;
-      flex-shrink: 0;
+      padding: 10px 32px;
+      border-radius: 0.5rem;
+      background: #9ddf2e;
+      color: #213600 !important;
+      font-weight: 700;
+      gap: 8px;
+      box-shadow: 0 0 20px rgba(157, 223, 46, 0.4);
 
       &:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 10px 28px rgba(59, 130, 246, 0.45);
+        background: #b2f746;
+        transform: translateY(-2px);
+        box-shadow: 0 0 30px rgba(157, 223, 46, 0.6);
       }
     }
   }
 
-  &__btn-arrow {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.22);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+  :deep(.el-form-item) {
+    margin-bottom: 16px;
 
-    svg {
-      width: 14px;
-      height: 14px;
+    &:not(.station-config__name-item) {
+      width: 100%;
+      max-width: 100%;
+    }
+
+    &:last-child {
+      margin-bottom: 0;
     }
   }
 
-  &__form {
-    width: 100%;
-    min-width: 0;
-  }
-
-  :deep(.el-form-item) {
-    margin-bottom: 14px;
-    width: 100%;
-    max-width: 100%;
-  }
-
-  :deep(.el-form-item__content) {
-    width: 100% !important;
-    max-width: 100% !important;
-    margin-left: 0 !important;
-  }
-
   :deep(.el-form-item__label) {
-    color: rgba(190, 200, 212, 0.88);
-    font-size: 10px;
-    line-height: 1.2;
+    font-family: Inter, sans-serif !important;
+    color: #ffffff !important;
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    line-height: 14px;
+    height: 20px;
+    width: auto !important;
+    max-width: 100% !important;
     margin-bottom: 6px !important;
     padding: 0;
+    justify-content: flex-start;
+    word-break: normal;
+    white-space: nowrap;
   }
 
   :deep(.el-form-item.is-required:not(.is-no-asterisk).asterisk-right > .el-form-item__label:after),
   :deep(.el-form-item.is-required:not(.is-no-asterisk) > .el-form-item__label:before) {
-    color: #ff6b6b;
-  }
-
-  :deep(.station-config__form .el-input),
-  :deep(.station-config__form .el-input__wrapper),
-  :deep(.station-config__form .el-input .el-input__wrapper) {
-    width: 100% !important;
-    max-width: 100% !important;
+    color: #ffb4ab !important;
   }
 
   :deep(.station-config__form .el-input__wrapper),
   :deep(.station-config__form .el-input .el-input__wrapper) {
-    background: rgba(26, 34, 44, 0.72) !important;
-    background-color: rgba(26, 34, 44, 0.72) !important;
+    background: #07100b !important;
+    background-color: #07100b !important;
     background-image: none !important;
-    --el-input-bg-color: rgba(26, 34, 44, 0.72);
-    --el-fill-color-blank: rgba(26, 34, 44, 0.72);
-    --el-input-width: 100%;
+    --el-input-bg-color: #07100b;
+    --el-fill-color-blank: #07100b;
+    --el-input-border-color: rgba(180, 200, 220, 0.18);
+    --el-border-color: rgba(180, 200, 220, 0.18);
     border: 1px solid rgba(180, 200, 220, 0.18) !important;
+    outline: none !important;
     border-radius: 8px !important;
     box-shadow: none !important;
-    min-height: 36px;
+    min-height: 40px;
+    transition: border-color 0.15s ease;
   }
 
-  :deep(.station-config__form .el-input) {
-    --el-input-bg-color: rgba(26, 34, 44, 0.72);
-    --el-fill-color-blank: rgba(26, 34, 44, 0.72);
-    --el-input-width: 100%;
-  }
-
-  :deep(.station-config__form .el-input__wrapper:hover),
-  :deep(.station-config__form .el-input__wrapper.is-focus) {
-    border-color: rgba(0, 162, 255, 0.45) !important;
+  :deep(.station-config__form .el-input__wrapper:hover) {
+    border-color: rgba(180, 200, 220, 0.32) !important;
     box-shadow: none !important;
-    background: rgba(26, 34, 44, 0.72) !important;
-    background-color: rgba(26, 34, 44, 0.72) !important;
-    background-image: none !important;
+    background: #07100b !important;
+  }
+
+  :deep(.station-config__form .el-input__wrapper.is-focus),
+  :deep(.station-config__form .el-input__wrapper.is-focus:hover) {
+    border-color: #9ddf2e !important;
+    border-width: 2px !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background: #07100b !important;
   }
 
   :deep(.station-config__form .el-input__inner) {
-    color: #ffffff !important;
-    font-size: 12px !important;
+    font-family: Inter, "Noto Sans SC", sans-serif !important;
+    font-size: 16px !important;
+    font-weight: 400 !important;
+    line-height: 20px !important;
+    color: #dae5dc !important;
+  }
+
+  :deep(.station-config__form .el-input__inner::selection),
+  :deep(.station-config__form input::selection) {
+    background: #9ddf2e !important;
+    color: #213600 !important;
   }
 
   :deep(.station-config__form .el-input__inner::placeholder) {
-    color: #6b7280 !important;
+    color: rgba(192, 200, 195, 0.7) !important;
   }
 
   :deep(.station-config__form .el-form-item.is-error .el-input__wrapper) {
-    border-color: rgba(248, 113, 113, 0.7) !important;
+    border-color: #ffb4ab !important;
+    box-shadow: none !important;
   }
 }
 

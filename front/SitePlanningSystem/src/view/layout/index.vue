@@ -120,8 +120,6 @@ window.addEventListener("resize", () => {
         display: flex;
         flex-direction: column;
         pointer-events: none;
-        // 强制创建新的合层，防止缩放后子元素的毛玻璃效果失效
-        will-change: transform;
     height: 100vh;
 
         /* 选点中：禁用所有 UI 交互，事件穿透到下方地球 */

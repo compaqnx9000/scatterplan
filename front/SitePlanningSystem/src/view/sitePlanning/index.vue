@@ -18,18 +18,34 @@
         </div>
 
         <div class="results-panel__toolbar">
-          <label class="results-panel__field">
-            <span>工程名称</span>
-            <el-input v-model="queryParams.search" placeholder="请输入工程名称" clearable />
-          </label>
-          <label class="results-panel__field">
-            <span>用户名称</span>
-            <el-input v-model="queryParams.user__username" placeholder="请输入用户名称" clearable />
-          </label>
-          <div class="results-panel__actions">
-            <button class="results-panel__btn results-panel__btn--ghost" type="button" @click="handleReset">重置</button>
-            <button class="results-panel__btn results-panel__btn--primary" type="button" @click="handleSearch">查询</button>
+          <div class="results-panel__search">
+            <div class="results-panel__seg">
+              <button
+                type="button"
+                class="results-panel__seg-btn"
+                :class="{ 'is-active': queryField === 'name' }"
+                @click="queryField = 'name'"
+              >
+                工程名称
+              </button>
+              <button
+                type="button"
+                class="results-panel__seg-btn"
+                :class="{ 'is-active': queryField === 'user' }"
+                @click="queryField = 'user'"
+              >
+                用户名称
+              </button>
+            </div>
+            <input
+              v-model="keyword"
+              class="results-panel__search-input"
+              type="text"
+              :placeholder="queryField === 'user' ? '请输入用户名称' : '请输入工程名称'"
+              @keyup.enter="handleSearch"
+            />
           </div>
+          <button class="results-panel__btn results-panel__btn--primary" type="button" @click="handleSearch">查询</button>
         </div>
 
         <div class="results-panel__table">
@@ -77,15 +93,19 @@
         </div>
 
         <div class="results-panel__footer">
-          <el-pagination
-            background
-            @size-change="handleSizeChange"
-            @current-change="handleCurrentChange"
-            :current-page="queryParams.page"
-            :page-sizes="[10, 20, 50, 100]"
-            layout="total, prev, pager, next, jumper"
-            :total="total"
-          />
+          <button class="results-panel__btn results-panel__btn--primary" type="button" @click="handleClose">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M5.4 12.4 10 17l8.6-9.2"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            确认
+          </button>
         </div>
       </div>
     </div>
@@ -101,14 +121,10 @@ import { listProjects, deleteProject } from "@/request/sitePlanting";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
-const queryParams = ref({
-  page: 1,
-  search: "",
-  user__username: "",
-});
+const queryField = ref<"name" | "user">("name");
+const keyword = ref("");
 
 let tableData: any = reactive([]);
-const total = ref(0);
 const loading = ref(false);
 const ids = ref<number[]>([]);
 const multiple = ref(true);
@@ -197,12 +213,17 @@ const isoToNormalTime = (isoTime) => {
 const getList = async () => {
   loading.value = true;
   try {
-    const res: any = await listProjects(queryParams.value);
-    tableData = res.results || [];
+    const params: Record<string, any> = { page: 1, page_size: 1000 };
+    const text = keyword.value.trim();
+    if (text) {
+      if (queryField.value === "user") params.user__username = text;
+      else params.search = text;
+    }
+    const res: any = await listProjects(params);
+    tableData = Array.isArray(res) ? res : res.results || [];
     tableData.forEach((item: any) => {
       item.updated_at = isoToNormalTime(item.updated_at);
     });
-    total.value = res.count || 0;
   } catch (error) {
     // ElMessage.error("加载失败");
   } finally {
@@ -210,25 +231,7 @@ const getList = async () => {
   }
 };
 
-const handleSizeChange = (val: number) => {
-  queryParams.value.page = val;
-  getList();
-};
-
-const handleCurrentChange = (val: number) => {
-  queryParams.value.page = val;
-  getList();
-};
-
 const handleSearch = () => {
-  queryParams.value.page = 1;
-  getList();
-};
-
-const handleReset = () => {
-  queryParams.value.search = "";
-  queryParams.value.user__username = "";
-  queryParams.value.page = 1;
   getList();
 };
 

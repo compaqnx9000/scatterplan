@@ -88,7 +88,7 @@ export let map3dConfig = {
                 { "name": "底图", "type": "tdt", "layer": "img_d" },
                 { "name": "注记", "type": "tdt", "layer": "img_z" }
             ],
-            "show": false
+            "show": true
         },
         {
             "pid": 10,
@@ -200,7 +200,7 @@ export let map3dConfig = {
             "type": "tencent",
             "layer": "custom",
             "style": "4",
-            "show": true
+            "show": false
         },
         {
             "pid": 10,

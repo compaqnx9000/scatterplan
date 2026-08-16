@@ -4,6 +4,7 @@ from .views import (
     ProjectViewSet,
     SingleLinkViewSet,
     AreaCoverageViewSet,
+    MapTileServiceViewSet,
     # SitePlannerView,
     ColorSetting,
     # StationSelection,
@@ -16,6 +17,7 @@ router = DefaultRouter()
 router.register(r'plans', ProjectViewSet, basename='project')
 router.register(r'singlelinks', SingleLinkViewSet, basename='singlelink')
 router.register(r'areacoverages', AreaCoverageViewSet, basename='areacoverage')
+router.register(r'map-services', MapTileServiceViewSet, basename='map-service')
 
 urlpatterns = [
     path('', include(router.urls)),

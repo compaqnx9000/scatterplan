@@ -52,6 +52,10 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true, //是否允许跨域
           rewrite: (path) => path.replace(/^\/prod-api/, ""), // 本地环境需要过滤，线上环境不需要过滤
         },
+        "/media": {
+          target: loadEnv(mode, process.cwd()).VITE_APP_BASE_url,
+          changeOrigin: true,
+        },
         // 上图资源全部直接访问，不走转发
         '/geoserver': {     //匹配前缀
           // target: loadEnv(mode, process.cwd()).VITE_APP_BASE_url,   //转发地址 - 环境变量

@@ -52,10 +52,12 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { getCurrentInstance, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
 import { getMapInstance } from "@/assets/util/index";
 import { searchPlaces, type PlaceHit } from "./nominatim";
+
+const $bus = getCurrentInstance()?.appContext.config.globalProperties.$bus;
 
 const props = defineProps({
   disabled: {
@@ -118,11 +120,27 @@ const onFocus = () => {
   if (query.value.trim()) panelOpen.value = true;
 };
 
-const clearQuery = () => {
+const resetSearch = () => {
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+    debounceTimer = null;
+  }
+  abortCtrl?.abort();
+  searchSeq += 1;
+  skipQueryWatch = true;
   query.value = "";
   results.value = [];
   errorText.value = "";
+  loading.value = false;
   panelOpen.value = false;
+  activeIndex.value = 0;
+  nextTick(() => {
+    skipQueryWatch = false;
+  });
+};
+
+const clearQuery = () => {
+  resetSearch();
   inputRef.value?.focus();
 };
 
@@ -198,10 +216,14 @@ const onDocMouseDown = (e: MouseEvent) => {
 
 onMounted(() => {
   document.addEventListener("mousedown", onDocMouseDown);
+  $bus?.on("resetMapView", resetSearch);
+  $bus?.on("Logout", resetSearch);
 });
 
 onBeforeUnmount(() => {
   document.removeEventListener("mousedown", onDocMouseDown);
+  $bus?.off("resetMapView", resetSearch);
+  $bus?.off("Logout", resetSearch);
   if (debounceTimer) clearTimeout(debounceTimer);
   abortCtrl?.abort();
 });
@@ -224,15 +246,15 @@ onBeforeUnmount(() => {
   height: 38px;
   padding: 0 10px 0 12px;
   border-radius: 999px;
-  background: rgba(8, 12, 18, 0.55);
-  border: 1px solid rgba(180, 200, 220, 0.16);
+  background: rgba(8, 10, 8, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   box-sizing: border-box;
 }
 
 .place-search.is-open .place-search__field,
 .place-search__field:focus-within {
-  border-color: rgba(126, 200, 255, 0.45);
-  background: rgba(8, 12, 18, 0.78);
+  border-color: rgba(163, 230, 53, 0.55);
+  background: rgba(8, 10, 8, 0.88);
 }
 
 .place-search__icon {
@@ -255,13 +277,13 @@ onBeforeUnmount(() => {
   border: none;
   outline: none;
   background: transparent;
-  color: #e8e2d2;
+  color: #ffffff;
   font-family: inherit;
   font-size: 12px;
   line-height: 1.2;
 
   &::placeholder {
-    color: #5c5863;
+    color: rgba(210, 220, 230, 0.55);
   }
 
   &:disabled {
@@ -296,8 +318,8 @@ onBeforeUnmount(() => {
   overflow-y: auto;
   padding: 6px;
   border-radius: 12px;
-  background: rgba(10, 14, 20, 0.94);
-  border: 1px solid rgba(232, 226, 210, 0.12);
+  background: rgba(18, 20, 18, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(18px);
   z-index: 1400;
@@ -324,13 +346,13 @@ onBeforeUnmount(() => {
   border: none;
   border-radius: 8px;
   background: transparent;
-  color: #e8e2d2;
+  color: #ffffff;
   text-align: left;
   cursor: pointer;
 
   &.is-active,
   &:hover {
-    background: rgba(212, 160, 23, 0.15);
+    background: rgba(163, 230, 53, 0.16);
   }
 }
 

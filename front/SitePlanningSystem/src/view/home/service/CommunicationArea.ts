@@ -2,6 +2,7 @@ import { color } from "echarts";
 import * as mars3d from "mars3d";
 import { Label } from "mars3d-cesium";
 import { MAP_LABEL_FONT } from "./mapLabelStyle";
+import { parseLongitude, parseLatitude } from "./rules";
 
 export interface CommunicationArea {
   id: number;
@@ -12,6 +13,24 @@ export interface CommunicationArea {
     coordinates: number[][];
   };
 }
+
+const toLng = (value: any) => {
+  const n = parseLongitude(value);
+  return Number.isFinite(n) ? n : NaN;
+};
+
+const toLat = (value: any) => {
+  const n = parseLatitude(value);
+  return Number.isFinite(n) ? n : NaN;
+};
+
+const isValidLngLat = (lng: number, lat: number) =>
+  Number.isFinite(lng) &&
+  Number.isFinite(lat) &&
+  lng >= -180 &&
+  lng <= 180 &&
+  lat >= -90 &&
+  lat <= 90;
 export default class CommunicationAreaService {
   map: mars3d.Map;
   graphicLayer: mars3d.layer.GraphicLayer;
@@ -215,22 +234,33 @@ export default class CommunicationAreaService {
     let isHave = false;
     console.log("data", data);
 
+    const initialLng = toLng(data.initialPointLng);
+    const initialLat = toLat(data.initialPointLat);
+    const destLng = toLng(data.destinationPointLng);
+    const destLat = toLat(data.destinationPointLat);
+    const centerLng = toLng(data.centerPointLng);
+    const centerLat = toLat(data.centerPointLat);
+    const radiusKm = Number(data.radius);
+    const areaKind = data.activeName || data.area_type;
+
     if (data.activeName === "Rectangle" || data.activeName === "round") {
       this.graphicLayer.eachGraphic((graphicItem) => {
         if (graphicItem && graphicItem.name === data.activeName) {
           isHave = true;
           if (data.activeName === "Rectangle") {
+            if (!isValidLngLat(initialLng, initialLat) || !isValidLngLat(destLng, destLat)) return;
             graphicItem.setOptions({
               positions: [
-                [data.initialPointLng, data.initialPointLat],
-                [data.destinationPointLng, data.destinationPointLat],
+                [initialLng, initialLat],
+                [destLng, destLat],
               ],
             });
           } else if (data.activeName === "round") {
+            if (!isValidLngLat(centerLng, centerLat) || !Number.isFinite(radiusKm)) return;
             graphicItem.setOptions({
-              position: [data.centerPointLng, data.centerPointLat],
+              position: [centerLng, centerLat],
               style: {
-                radius: data.radius * 1000,
+                radius: radiusKm * 1000,
               },
             });
           }
@@ -245,17 +275,19 @@ export default class CommunicationAreaService {
         if (graphicItem && graphicItem.name === data.area_type) {
           isHave = true;
           if (data.area_type === "smallRectangle") {
+            if (!isValidLngLat(initialLng, initialLat) || !isValidLngLat(destLng, destLat)) return;
             graphicItem.setOptions({
               positions: [
-                [data.initialPointLng, data.initialPointLat],
-                [data.destinationPointLng, data.destinationPointLat],
+                [initialLng, initialLat],
+                [destLng, destLat],
               ],
             });
           } else if (data.area_type === "smallRound") {
+            if (!isValidLngLat(centerLng, centerLat) || !Number.isFinite(radiusKm)) return;
             graphicItem.setOptions({
-              position: [data.centerPointLng, data.centerPointLat],
+              position: [centerLng, centerLat],
               style: {
-                radius: data.radius * 1000,
+                radius: radiusKm * 1000,
               },
             });
           }
@@ -270,17 +302,19 @@ export default class CommunicationAreaService {
         if (graphicItem && graphicItem.name === data.area_type) {
           isHave = true;
           if (data.area_type === "relayRectangle") {
+            if (!isValidLngLat(initialLng, initialLat) || !isValidLngLat(destLng, destLat)) return;
             graphicItem.setOptions({
               positions: [
-                [data.initialPointLng, data.initialPointLat],
-                [data.destinationPointLng, data.destinationPointLat],
+                [initialLng, initialLat],
+                [destLng, destLat],
               ],
             });
           } else if (data.area_type === "relayRound") {
+            if (!isValidLngLat(centerLng, centerLat) || !Number.isFinite(radiusKm)) return;
             graphicItem.setOptions({
-              position: [data.centerPointLng, data.centerPointLat],
+              position: [centerLng, centerLat],
               style: {
-                radius: data.radius * 1000,
+                radius: radiusKm * 1000,
               },
             });
           }
@@ -292,15 +326,16 @@ export default class CommunicationAreaService {
       return;
     }
     if (data) {
-      switch (data.activeName) {
+      switch (areaKind) {
         case "smallRectangle":
         case "Rectangle":
         case "relayRectangle":
+          if (!isValidLngLat(initialLng, initialLat) || !isValidLngLat(destLng, destLat)) break;
           const graphicRectangle = new mars3d.graphic.RectanglePrimitive({
-            name: data.activeName,
+            name: areaKind,
             positions: [
-              [data.initialPointLng, data.initialPointLat],
-              [data.destinationPointLng, data.destinationPointLat],
+              [initialLng, initialLat],
+              [destLng, destLat],
             ],
             style: {
               opacity: 0.4,
@@ -309,37 +344,34 @@ export default class CommunicationAreaService {
             },
             attr: { remark: "示例1" },
           });
-          if (data.activeName === "smallRectangle") {
+          if (areaKind === "smallRectangle") {
             this.smallRectangleLayer.addGraphic(graphicRectangle);
-          } else if (data.activeName === "Rectangle") {
+          } else if (areaKind === "Rectangle") {
             this.graphicLayer.addGraphic(graphicRectangle);
-          } else if (data.activeName === "relayRectangle") {
+          } else if (areaKind === "relayRectangle") {
             this.relayRectangleLayer.addGraphic(graphicRectangle);
           }
           break;
         case "smallRound":
         case "round":
         case "relayRound":
+          if (!isValidLngLat(centerLng, centerLat) || !Number.isFinite(radiusKm)) break;
           const graphicRound = new mars3d.graphic.CircleEntity({
-            name: data.activeName,
-            position: new mars3d.LngLatPoint(
-              data.centerPointLng,
-              data.centerPointLat,
-              0,
-            ),
+            name: areaKind,
+            position: new mars3d.LngLatPoint(centerLng, centerLat, 0),
             style: {
-              radius: data.radius,
+              radius: radiusKm,
               opacity: 0.4,
               clampToGround: true,
               color: "#02D4FD",
             },
             attr: { remark: "示例10" },
           });
-          if (data.activeName === "smallRound") {
+          if (areaKind === "smallRound") {
             this.smallRectangleLayer.addGraphic(graphicRound);
-          } else if (data.activeName === "round") {
+          } else if (areaKind === "round") {
             this.graphicLayer.addGraphic(graphicRound);
-          } else if (data.activeName === "relayRound") {
+          } else if (areaKind === "relayRound") {
             this.relayRectangleLayer.addGraphic(graphicRound);
           }
           break;
@@ -355,25 +387,42 @@ export default class CommunicationAreaService {
     let isHave = false;
     console.log("data", data);
 
+    const initialLng = toLng(data.initialPointLng);
+    const initialLat = toLat(data.initialPointLat);
+    const destLng = toLng(data.destinationPointLng);
+    const destLat = toLat(data.destinationPointLat);
+    const centerLng = toLng(data.centerPointLng);
+    const centerLat = toLat(data.centerPointLat);
+    const radiusKm = Number(data.radius);
+    const areaKind =
+      data.activeName ||
+      (data.activeProhibitedName === "Rectangle"
+        ? "prohibitedRectangle"
+        : data.activeProhibitedName === "Round"
+          ? "prohibitedRound"
+          : "");
+
     if (
-      data.activeName === "prohibitedRectangle" ||
-      data.activeName === "prohibitedRound"
+      areaKind === "prohibitedRectangle" ||
+      areaKind === "prohibitedRound"
     ) {
-      this.graphicLayer.eachGraphic((graphicItem) => {
-        if (graphicItem && graphicItem.name === data.activeName) {
+      this.prohibitedCommunicationAreaLayer.eachGraphic((graphicItem) => {
+        if (graphicItem && graphicItem.name === areaKind) {
           isHave = true;
-          if (data.activeName === "prohibitedRectangle") {
+          if (areaKind === "prohibitedRectangle") {
+            if (!isValidLngLat(initialLng, initialLat) || !isValidLngLat(destLng, destLat)) return;
             graphicItem.setOptions({
               positions: [
-                [data.initialPointLng, data.initialPointLat],
-                [data.destinationPointLng, data.destinationPointLat],
+                [initialLng, initialLat],
+                [destLng, destLat],
               ],
             });
-          } else if (data.activeName === "prohibitedRound") {
+          } else if (areaKind === "prohibitedRound") {
+            if (!isValidLngLat(centerLng, centerLat) || !Number.isFinite(radiusKm)) return;
             graphicItem.setOptions({
-              position: [data.centerPointLng, data.centerPointLat],
+              position: [centerLng, centerLat],
               style: {
-                radius: data.radius * 1000,
+                radius: radiusKm * 1000,
               },
             });
           }
@@ -385,13 +434,14 @@ export default class CommunicationAreaService {
       return;
     }
     if (data) {
-      switch (data.activeName) {
+      switch (areaKind) {
         case "prohibitedRectangle":
+          if (!isValidLngLat(initialLng, initialLat) || !isValidLngLat(destLng, destLat)) break;
           const graphicRectangle = new mars3d.graphic.RectanglePrimitive({
-            name: data.activeName,
+            name: areaKind,
             positions: [
-              [data.initialPointLng, data.initialPointLat],
-              [data.destinationPointLng, data.destinationPointLat],
+              [initialLng, initialLat],
+              [destLng, destLat],
             ],
             style: {
               opacity: 0.4,
@@ -400,29 +450,26 @@ export default class CommunicationAreaService {
             },
             attr: { remark: "示例1" },
           });
-          if (data.activeName === "prohibitedRectangle") {
-            this.prohibitedCommunicationAreaLayer.addGraphic(graphicRectangle);
-          }
+          this.prohibitedCommunicationAreaLayer.addGraphic(graphicRectangle);
           break;
         case "prohibitedRound":
+          if (!isValidLngLat(centerLng, centerLat) || !Number.isFinite(radiusKm)) break;
           const graphicRound = new mars3d.graphic.CircleEntity({
-            name: data.activeName,
+            name: areaKind,
             position: new mars3d.LngLatPoint(
-              data.centerPointLng,
-              data.centerPointLat,
+              centerLng,
+              centerLat,
               0,
             ),
             style: {
-              radius: data.radius,
+              radius: radiusKm,
               opacity: 0.4,
               clampToGround: true,
               color: "rgba(243, 42, 7, 0.2)",
             },
             attr: { remark: "示例10" },
           });
-          if (data.activeName === "prohibitedRound") {
-            this.prohibitedCommunicationAreaLayer.addGraphic(graphicRound);
-          }
+          this.prohibitedCommunicationAreaLayer.addGraphic(graphicRound);
           break;
       }
     }
@@ -695,24 +742,18 @@ export default class CommunicationAreaService {
   addClusterPoint(data: any) {
     console.log("data", data);
     this.cluster_point_layer.clear();
-    // this.graphicLayer.eachGraphic((graphicItem) => {
-    //   // 检查 graphicItem.name 是否以 "cluster_point" 开头
-    //   console.log("graphicItem", graphicItem);
-    //   if (graphicItem && graphicItem.name.startsWith("cluster_point")) {
-    //     console.log('graphicItem',graphicItem.name);
-    //     this.graphicLayer.removeGraphic(graphicItem);
-    //   }
-    // });
     console.log("清理完毕", this.graphicLayer);
 
-    data.forEach((item: any, index: number) => {
-      // 点矢量
+    (data || []).forEach((item: any, index: number) => {
+      const lng = toLng(item.longitude ?? item.center_longitude);
+      const lat = toLat(item.latitude ?? item.center_latitude);
+      if (!isValidLngLat(lng, lat)) {
+        console.warn("跳过无效聚类点坐标", item);
+        return;
+      }
       const graphicPoint = new mars3d.graphic.BillboardEntity({
         name: "cluster_point" + index,
-        position: [
-          item.longitude || item.center_longitude,
-          item.latitude || item.center_latitude,
-        ],
+        position: [lng, lat],
         style: {
           image: "/images/def2_point.png",
           horizontalOrigin: mars3d.Cesium.HorizontalOrigin.CENTER,
@@ -720,7 +761,6 @@ export default class CommunicationAreaService {
           scale: 0.3,
           clampToGround: true,
           label: {
-            // 不需要文字时，去掉label配置即可
             text: item.name,
             ...MAP_LABEL_FONT,
             color: "#ffffff",
@@ -744,14 +784,16 @@ export default class CommunicationAreaService {
     console.log("清理完毕", this.relay_cluster_point_layer);
     console.log("data", data);
 
-    data.forEach((item: any, index: number) => {
-      // 点矢量
+    (data || []).forEach((item: any, index: number) => {
+      const lng = toLng(item.longitude ?? item.center_longitude);
+      const lat = toLat(item.latitude ?? item.center_latitude);
+      if (!isValidLngLat(lng, lat)) {
+        console.warn("跳过无效中继聚类点坐标", item);
+        return;
+      }
       const graphicPoint = new mars3d.graphic.BillboardEntity({
         name: "relay_cluster_point" + index,
-        position: [
-          item.longitude || item.center_longitude,
-          item.latitude || item.center_latitude,
-        ],
+        position: [lng, lat],
         style: {
           image: "/images/def2_point.png",
           horizontalOrigin: mars3d.Cesium.HorizontalOrigin.CENTER,
@@ -759,7 +801,6 @@ export default class CommunicationAreaService {
           scale: 0.3,
           clampToGround: true,
           label: {
-            // 不需要文字时，去掉label配置即可
             text: item.name,
             ...MAP_LABEL_FONT,
             color: "#ffffff",

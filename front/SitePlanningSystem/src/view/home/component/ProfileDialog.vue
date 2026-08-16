@@ -7,9 +7,29 @@
       :style="panelStyle"
     >
       <div class="station-config__panel">
+        <div class="station-config__edge"></div>
         <div class="station-config__header" @mousedown="startDrag">
-          <div class="station-config__title">剖面洞察</div>
-          <button class="station-config__close" type="button" title="关闭" @click="setVisible(false)" @mousedown.stop>
+          <div class="station-config__heading">
+            <div class="station-config__badge">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M4 18h16v2H4zm2-3 4-5 3 4 4-6 3 7H6z"
+                  fill="currentColor"
+                />
+              </svg>
+            </div>
+            <div>
+              <h2 class="station-config__title">剖面洞察</h2>
+              <p class="station-config__subtitle">Terrain profile and link quality overview.</p>
+            </div>
+          </div>
+          <button
+            class="station-config__icon-btn"
+            type="button"
+            title="关闭"
+            @click="setVisible(false)"
+            @mousedown.stop
+          >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path
                 d="M6.4 6.4 17.6 17.6M17.6 6.4 6.4 17.6"
@@ -22,125 +42,127 @@
           </button>
         </div>
 
-        <section class="insight-card" v-loading="loading">
-          <div class="insight-stats">
-            <div class="insight-stat">
-              <span class="insight-stat__icon is-tx">
-                <svg viewBox="0 0 24 24"><path d="M4 18h16v2H4zm2-3 4-5 3 4 4-6 3 7H6z" fill="currentColor"/></svg>
-              </span>
-              <div>
-                <div class="insight-stat__label">发射点高程</div>
-                <div class="insight-stat__value">{{ fmt(insights.tx_height) }} m</div>
+        <div class="station-config__body">
+          <section class="insight-card" v-loading="loading">
+            <div class="insight-stats">
+              <div class="insight-stat">
+                <span class="insight-stat__icon is-tx">
+                  <svg viewBox="0 0 24 24"><path d="M4 18h16v2H4zm2-3 4-5 3 4 4-6 3 7H6z" fill="currentColor"/></svg>
+                </span>
+                <div>
+                  <div class="insight-stat__label">发射点高程</div>
+                  <div class="insight-stat__value">{{ fmt(insights.tx_height) }} m</div>
+                </div>
+              </div>
+              <div class="insight-stat">
+                <span class="insight-stat__icon is-peak">
+                  <svg viewBox="0 0 24 24"><path d="M3 19 9 9l3 4 4-6 5 12H3z" fill="currentColor"/></svg>
+                </span>
+                <div>
+                  <div class="insight-stat__label">地形最高</div>
+                  <div class="insight-stat__value">{{ fmt(insights.max_height) }} m</div>
+                </div>
+              </div>
+              <div class="insight-stat">
+                <span class="insight-stat__icon is-dist">
+                  <svg viewBox="0 0 24 24"><path d="M4 12h16M16 8l4 4-4 4M8 8l-4 4 4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span>
+                <div>
+                  <div class="insight-stat__label">通信距离</div>
+                  <div class="insight-stat__value">{{ fmt(insights.distance, 2) }} km</div>
+                </div>
+              </div>
+              <div class="insight-stat">
+                <span class="insight-stat__icon is-scatter">
+                  <svg viewBox="0 0 24 24"><path d="M12 4v16M7 9l5-5 5 5M7 15l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span>
+                <div>
+                  <div class="insight-stat__label">散射体高度</div>
+                  <div class="insight-stat__value">{{ fmt(insights.scatterer_height) }} m</div>
+                </div>
               </div>
             </div>
-            <div class="insight-stat">
-              <span class="insight-stat__icon is-peak">
-                <svg viewBox="0 0 24 24"><path d="M3 19 9 9l3 4 4-6 5 12H3z" fill="currentColor"/></svg>
-              </span>
-              <div>
-                <div class="insight-stat__label">地形最高</div>
-                <div class="insight-stat__value">{{ fmt(insights.max_height) }} m</div>
-              </div>
-            </div>
-            <div class="insight-stat">
-              <span class="insight-stat__icon is-dist">
-                <svg viewBox="0 0 24 24"><path d="M4 12h16M16 8l4 4-4 4M8 8l-4 4 4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </span>
-              <div>
-                <div class="insight-stat__label">通信距离</div>
-                <div class="insight-stat__value">{{ fmt(insights.distance, 2) }} km</div>
-              </div>
-            </div>
-            <div class="insight-stat">
-              <span class="insight-stat__icon is-scatter">
-                <svg viewBox="0 0 24 24"><path d="M12 4v16M7 9l5-5 5 5M7 15l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </span>
-              <div>
-                <div class="insight-stat__label">散射体高度</div>
-                <div class="insight-stat__value">{{ fmt(insights.scatterer_height) }} m</div>
-              </div>
-            </div>
-          </div>
 
-          <h3 class="insight-title">高程剖面</h3>
-          <div v-show="hasDenseSamples" class="insight-chart" ref="chartRef"></div>
-          <div v-show="!hasDenseSamples" class="insight-image">
-            <img v-if="imageUrl" :src="imageUrl" alt="高程剖面图" />
-            <div v-else class="insight-empty">暂无剖面图</div>
-          </div>
-          <div class="insight-legend">
-            <span><i class="dot is-elev"></i>高程</span>
-            <span><i class="dot is-tx"></i>发射点</span>
-            <span><i class="dot is-obs"></i>障碍物</span>
-            <span><i class="dot is-scatter"></i>散射体</span>
-            <span><i class="dot is-rx"></i>接收点</span>
-          </div>
+            <div class="insight-section-head">
+              <h3>高程剖面</h3>
+            </div>
+            <div v-show="hasDenseSamples" class="insight-chart" ref="chartRef"></div>
+            <div v-show="!hasDenseSamples" class="insight-image">
+              <img v-if="imageUrl" :src="imageUrl" alt="高程剖面图" />
+              <div v-else class="insight-empty">暂无剖面图</div>
+            </div>
+            <div class="insight-legend">
+              <span><i class="dot is-elev"></i>高程</span>
+              <span><i class="dot is-tx"></i>发射点</span>
+              <span><i class="dot is-obs"></i>障碍物</span>
+              <span><i class="dot is-scatter"></i>散射体</span>
+              <span><i class="dot is-rx"></i>接收点</span>
+            </div>
 
-          <h3 class="insight-title">路径要点</h3>
-          <div class="insight-points">
-            <div>发射障碍 {{ fmt(txBarrierDistance, 2) }} km · {{ fmt(txBarrierElev) }} m</div>
-            <div>散射体 {{ fmt(scattererDistance, 2) }} km · {{ fmt(insights.scatterer_height) }} m</div>
-            <div>接收障碍 {{ fmt(rxBarrierFromStart, 2) }} km · {{ fmt(rxBarrierElev) }} m</div>
-            <div>接收点 {{ fmt(insights.distance, 2) }} km · {{ fmt(insights.rx_height) }} m</div>
-          </div>
+            <div class="insight-section-head">
+              <h3>路径要点</h3>
+            </div>
+            <div class="insight-points">
+              <div>发射障碍 {{ fmt(txBarrierDistance, 2) }} km · {{ fmt(txBarrierElev) }} m</div>
+              <div>散射体 {{ fmt(scattererDistance, 2) }} km · {{ fmt(insights.scatterer_height) }} m</div>
+              <div>接收障碍 {{ fmt(rxBarrierFromStart, 2) }} km · {{ fmt(rxBarrierElev) }} m</div>
+              <div>接收点 {{ fmt(insights.distance, 2) }} km · {{ fmt(insights.rx_height) }} m</div>
+            </div>
 
-          <h3 class="insight-title">信号质量</h3>
-          <div class="insight-heat">
-            <div class="insight-heat__row">
-              <span>路径损耗</span>
-              <div class="insight-heat__bar">
-                <div class="insight-heat__track"></div>
-                <i class="insight-heat__mark" :style="{ left: lossMark + '%' }"></i>
+            <div class="insight-section-head">
+              <h3>信号质量</h3>
+            </div>
+            <div class="insight-heat">
+              <div class="insight-heat__row">
+                <span>路径损耗</span>
+                <div class="insight-heat__bar">
+                  <div class="insight-heat__track"></div>
+                  <i class="insight-heat__mark" :style="{ left: lossMark + '%' }"></i>
+                </div>
+                <em>{{ fmt(insights.median_loss, 1) }} dB</em>
               </div>
-              <em>{{ fmt(insights.median_loss, 1) }} dB</em>
-            </div>
-            <div class="insight-heat__row">
-              <span>衰落余量</span>
-              <div class="insight-heat__bar">
-                <div class="insight-heat__track is-reverse"></div>
-                <i class="insight-heat__mark" :style="{ left: residualMark + '%' }"></i>
+              <div class="insight-heat__row">
+                <span>衰落余量</span>
+                <div class="insight-heat__bar">
+                  <div class="insight-heat__track is-reverse"></div>
+                  <i class="insight-heat__mark" :style="{ left: residualMark + '%' }"></i>
+                </div>
+                <em>{{ fmt(insights.residual_value, 1) }} dB</em>
               </div>
-              <em>{{ fmt(insights.residual_value, 1) }} dB</em>
             </div>
-          </div>
 
-          <h3 class="insight-title">链路状态</h3>
-          <div class="insight-status">
-            <div class="insight-status__bar">
-              <i :style="{ width: reliabilityMark + '%' }"></i>
+            <div class="insight-section-head">
+              <h3>链路状态</h3>
             </div>
-            <div class="insight-status__scale"><span>0</span><span>50</span><span>100</span></div>
-            <div class="insight-status__legend">
-              <span><i class="dot is-ok"></i>可靠度 {{ fmt(insights.reliability, 1) }}%</span>
-              <span><i class="dot is-power"></i>接收功率 {{ fmt(insights.recv_power, 1) }} dBm</span>
+            <div class="insight-status">
+              <div class="insight-status__bar">
+                <i :style="{ width: reliabilityMark + '%' }"></i>
+              </div>
+              <div class="insight-status__scale"><span>0</span><span>50</span><span>100</span></div>
+              <div class="insight-status__legend">
+                <span><i class="dot is-ok"></i>可靠度 {{ fmt(insights.reliability, 1) }}%</span>
+                <span><i class="dot is-power"></i>接收功率 {{ fmt(insights.recv_power, 1) }} dBm</span>
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        </div>
 
         <div class="station-config__footer">
-          <div class="station-config__footer-left">
-            <button class="station-config__btn station-config__btn--ghost" type="button" @click="setVisible(false)">
-              取消
-            </button>
-          </div>
-          <button
-            class="station-config__btn station-config__btn--primary"
-            type="button"
-            @click="handleConfirm"
-          >
-            <span>链路计算</span>
-            <span class="station-config__btn-arrow">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M9.5 6.5 15.5 12l-6 5.5"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </span>
+          <button class="station-config__btn station-config__btn--ghost" type="button" @click="setVisible(false)">
+            取消
+          </button>
+          <button class="station-config__btn station-config__btn--primary" type="button" @click="handleConfirm">
+            确认
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M9.5 6.5 15.5 12l-6 5.5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
           </button>
         </div>
       </div>
@@ -178,7 +200,7 @@ const chartRef = ref<HTMLElement | null>(null);
 const panelPos = ref({ x: 0, y: 0 });
 const dragging = ref(false);
 const dragOffset = ref({ x: 0, y: 0 });
-const PANEL_WIDTH = 720;
+const PANEL_WIDTH = 800;
 let chart: echarts.ECharts | null = null;
 
 const panelStyle = computed(() => ({
@@ -369,7 +391,7 @@ const renderChart = async () => {
         data: samples,
         showSymbol: false,
         smooth: false,
-        lineStyle: { color: "#7ec8ff", width: 1.8 },
+        lineStyle: { color: "#bef264", width: 1.8 },
         areaStyle: {
           origin: 0,
           color: {
@@ -474,47 +496,97 @@ onBeforeUnmount(() => {
 .station-config {
   position: fixed;
   z-index: 1200;
+  width: min(800px, calc(100vw - 48px));
   pointer-events: all;
   box-sizing: border-box;
 
-  *,
-  *::before,
-  *::after {
+  &__panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+    border-radius: 0.75rem;
+    background: rgba(12, 21, 16, 0.85);
+    border: 1px solid rgba(64, 73, 69, 0.3);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    color: #dae5dc;
     box-sizing: border-box;
   }
 
-  &__panel {
-    width: 100%;
-    padding: 22px 24px 20px;
-    border-radius: 14px;
-    background: rgba(26, 34, 44, 0.72);
-    border: 1px solid rgba(180, 200, 220, 0.18);
-    box-shadow:
-      0 18px 48px rgba(0, 0, 0, 0.38),
-      inset 0 1px 0 rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(22px) saturate(1.15);
-    -webkit-backdrop-filter: blur(22px) saturate(1.15);
-    color: #ffffff;
-    overflow: hidden;
+  &__edge {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.1), transparent);
+    pointer-events: none;
   }
 
   &__header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 16px;
+    gap: 16px;
+    padding: 20px 24px;
+    border-bottom: 1px solid rgba(64, 73, 69, 0.2);
+    background: rgba(45, 55, 49, 0.5);
     cursor: move;
     user-select: none;
+    flex-shrink: 0;
+  }
+
+  &__heading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  &__badge {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    background: rgba(45, 90, 76, 0.3);
+    border: 1px solid rgba(161, 209, 191, 0.2);
+    color: #a1d1bf;
+
+    svg {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
   }
 
   &__title {
-    font-size: 18px;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    color: #ffffff;
+    margin: 0;
+    font-family: Inter, "Noto Sans SC", sans-serif !important;
+    font-size: 24px !important;
+    font-weight: 600 !important;
+    line-height: 32px;
+    color: #ffffff !important;
+    white-space: nowrap;
   }
 
-  &__close {
+  &__subtitle {
+    margin: 4px 0 0;
+    font-family: Inter, sans-serif !important;
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    line-height: 20px;
+    color: #c0c8c3 !important;
+    white-space: nowrap;
+  }
+
+  &__icon-btn {
     width: 32px;
     height: 32px;
     flex-shrink: 0;
@@ -530,6 +602,7 @@ onBeforeUnmount(() => {
     svg {
       width: 18px;
       height: 18px;
+      flex-shrink: 0;
     }
 
     &:hover {
@@ -538,94 +611,98 @@ onBeforeUnmount(() => {
     }
   }
 
-  &__footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 16px;
-    gap: 12px;
-    width: 100%;
+  &__body {
+    padding: 20px 24px;
+    max-height: min(70vh, 720px);
+    overflow: auto;
   }
 
-  &__footer-left {
-    display: flex;
-    gap: 10px;
+  &__footer {
+    display: flex !important;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 16px;
+    flex: 0 0 auto !important;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0 !important;
+    padding: 16px 24px !important;
+    border-top: 1px solid rgba(64, 73, 69, 0.2) !important;
+    background: rgba(45, 55, 49, 0.3) !important;
   }
 
   &__btn {
     border: none;
     cursor: pointer;
-    font-size: 12px;
-    color: #fff;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    font-family: Inter, "Noto Sans SC", sans-serif !important;
+    font-size: 14px !important;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+
+    svg {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
 
     &--ghost {
-      min-width: 72px;
-      height: 40px;
-      padding: 0 16px;
-      border-radius: 8px;
-      background: rgba(38, 44, 53, 0.92);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: rgba(235, 240, 245, 0.92);
+      min-width: 88px;
+      padding: 10px 20px;
+      border-radius: 0.5rem;
+      background: transparent;
+      border: 1px solid #404945;
+      color: #c0c8c3 !important;
+      font-weight: 500;
 
       &:hover {
-        background: rgba(48, 56, 66, 0.95);
+        color: #ffffff !important;
+        background: rgba(45, 55, 49, 0.5);
       }
     }
 
     &--primary {
       min-width: 120px;
-      height: 44px;
-      padding: 0 16px 0 20px;
-      border-radius: 999px;
-      background: linear-gradient(90deg, #00a2ff 0%, #3b82f6 100%);
-      box-shadow: 0 8px 24px rgba(0, 162, 255, 0.38);
-      font-weight: 600;
+      padding: 10px 28px;
+      border-radius: 0.5rem;
+      background: #9ddf2e;
+      color: #213600 !important;
+      font-weight: 700;
+      gap: 8px;
+      box-shadow: 0 0 20px rgba(157, 223, 46, 0.4);
 
       &:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 10px 28px rgba(59, 130, 246, 0.45);
+        background: #b2f746;
+        transform: translateY(-2px);
+        box-shadow: 0 0 30px rgba(157, 223, 46, 0.6);
       }
-    }
-  }
-
-  &__btn-arrow {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.22);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-
-    svg {
-      width: 14px;
-      height: 14px;
     }
   }
 }
 
 .insight-card {
-  padding: 14px 12px 12px;
-  border-radius: 10px;
-  background: rgba(18, 24, 31, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 0;
+  background: transparent;
+  border: none;
 }
 
 .insight-stats {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px 16px;
-  margin-bottom: 16px;
+  gap: 12px;
+  margin-bottom: 20px;
 }
 
 .insight-stat {
   display: flex;
   align-items: center;
   gap: 10px;
+  padding: 12px 14px;
+  border-radius: 0.5rem;
+  background: #07100b;
+  border: 1px solid rgba(64, 73, 69, 0.5);
 
   &__icon {
     width: 28px;
@@ -639,45 +716,65 @@ onBeforeUnmount(() => {
     svg {
       width: 16px;
       height: 16px;
+      flex-shrink: 0;
     }
 
     &.is-tx { color: #5aa8ff; background: rgba(90, 168, 255, 0.16); }
     &.is-peak { color: #b388ff; background: rgba(179, 136, 255, 0.16); }
-    &.is-dist { color: #5a9e6f; background: rgba(90, 158, 111, 0.16); }
+    &.is-dist { color: #9ddf2e; background: rgba(157, 223, 46, 0.12); }
     &.is-scatter { color: #e8b52a; background: rgba(232, 181, 42, 0.16); }
   }
 
   &__label {
+    font-family: Inter, "Noto Sans SC", sans-serif;
     font-size: 11px;
-    color: rgba(190, 200, 212, 0.72);
+    font-weight: 500;
+    color: #c0c8c3;
   }
 
   &__value {
+    font-family: Inter, "Noto Sans SC", sans-serif;
     font-size: 16px;
     font-weight: 600;
-    color: #fff;
+    color: #ffffff;
     line-height: 1.2;
   }
 }
 
-.insight-title {
-  margin: 14px 0 8px;
-  font-size: 12px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.92);
+.insight-section-head {
+  display: flex;
+  align-items: center;
+  margin: 18px 0 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(64, 73, 69, 0.2);
+
+  h3 {
+    margin: 0;
+    font-family: Inter, "Noto Sans SC", sans-serif !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    line-height: 16px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #ffffff !important;
+  }
 }
 
 .insight-chart {
   width: 100%;
-  height: 168px;
+  height: 180px;
+  border-radius: 0.5rem;
+  background: #07100b;
+  border: 1px solid rgba(64, 73, 69, 0.5);
 }
 
 .insight-image {
   width: 100%;
-  min-height: 168px;
-  border-radius: 8px;
+  min-height: 180px;
+  border-radius: 0.5rem;
   overflow: hidden;
-  background: rgba(26, 34, 44, 0.72);
+  background: #07100b;
+  border: 1px solid rgba(64, 73, 69, 0.5);
 
   img {
     display: block;
@@ -687,19 +784,22 @@ onBeforeUnmount(() => {
 }
 
 .insight-empty {
-  color: rgba(190, 200, 212, 0.7);
-  font-size: 12px;
+  color: #c0c8c3;
+  font-family: Inter, "Noto Sans SC", sans-serif;
+  font-size: 13px;
   text-align: center;
-  padding: 48px 0;
+  padding: 56px 0;
 }
 
 .insight-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px 12px;
-  margin-top: 8px;
+  gap: 10px 14px;
+  margin-top: 10px;
+  font-family: Inter, "Noto Sans SC", sans-serif;
   font-size: 11px;
-  color: rgba(190, 200, 212, 0.78);
+  color: #c0c8c3;
+  white-space: nowrap;
 
   .dot {
     width: 7px;
@@ -707,12 +807,12 @@ onBeforeUnmount(() => {
     border-radius: 50%;
     display: inline-block;
     margin-right: 5px;
-    &.is-elev { background: #7ec8ff; }
+    &.is-elev { background: #bef264; }
     &.is-tx { background: #5aa8ff; }
     &.is-obs { background: #c47a5a; }
     &.is-scatter { background: #e8b52a; }
     &.is-rx { background: #5a9e6f; }
-    &.is-ok { background: #5a9e6f; }
+    &.is-ok { background: #9ddf2e; }
     &.is-power { background: #c47a5a; }
   }
 }
@@ -720,28 +820,31 @@ onBeforeUnmount(() => {
 .insight-points {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px 10px;
-  font-size: 11px;
-  color: rgba(220, 226, 232, 0.86);
+  gap: 8px 16px;
+  font-family: Inter, "Noto Sans SC", sans-serif;
+  font-size: 13px;
+  color: #dae5dc;
 }
 
 .insight-heat {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 
   &__row {
     display: grid;
-    grid-template-columns: 64px 1fr 72px;
+    grid-template-columns: 72px 1fr 80px;
     align-items: center;
-    gap: 8px;
-    font-size: 11px;
-    color: rgba(220, 226, 232, 0.86);
+    gap: 10px;
+    font-family: Inter, "Noto Sans SC", sans-serif;
+    font-size: 12px;
+    color: #c0c8c3;
 
     em {
       font-style: normal;
       text-align: right;
-      color: #fff;
+      color: #ffffff;
+      white-space: nowrap;
     }
   }
 
@@ -790,16 +893,20 @@ onBeforeUnmount(() => {
     display: flex;
     justify-content: space-between;
     margin-top: 4px;
+    font-family: Inter, sans-serif;
     font-size: 10px;
-    color: rgba(190, 200, 212, 0.6);
+    color: rgba(192, 200, 195, 0.7);
   }
 
   &__legend {
     display: flex;
+    flex-wrap: wrap;
     gap: 14px;
-    margin-top: 8px;
-    font-size: 11px;
-    color: rgba(220, 226, 232, 0.86);
+    margin-top: 10px;
+    font-family: Inter, "Noto Sans SC", sans-serif;
+    font-size: 12px;
+    color: #dae5dc;
+    white-space: nowrap;
   }
 }
 
@@ -814,6 +921,6 @@ onBeforeUnmount(() => {
 }
 
 :deep(.el-loading-mask) {
-  background: rgba(18, 24, 31, 0.55);
+  background: rgba(12, 21, 16, 0.55);
 }
 </style>

@@ -4,11 +4,13 @@ from datetime import datetime
 # import json
 
 import pandas as pd
+from django.http import FileResponse
 from drf_spectacular.utils import extend_schema, OpenApiRequest, OpenApiResponse, OpenApiExample
 from rest_framework import viewsets, mixins, filters, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from django_filters.rest_framework import DjangoFilterBackend
 from django.conf import settings
@@ -17,7 +19,7 @@ from django.conf import settings
 
 from django.db.models import Count, Exists, OuterRef
 
-from .models import Project, SingleLink, AreaCoverage, Stations
+from .models import Project, SingleLink, AreaCoverage, Stations, MapTileService
 from .serializers import (
     ProjectListSerializer,
     ProjectDetailSerializer,
@@ -25,6 +27,7 @@ from .serializers import (
     AreaCoverageSerializer,
     # DandongSerializer,
     StationsSerializer,
+    MapTileServiceSerializer,
     ColorSettingReqSerializer,
     ColorSettingResSerializer,
     RecalculateFadeMarginReqSerializer,
@@ -66,12 +69,19 @@ def _can_manage(user, owner):
     return user.is_staff or user.is_superuser or owner == user
 
 
+class ProjectListPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = "page_size"
+    max_page_size = 1000
+
+
 class ProjectViewSet(mixins.ListModelMixin,
                      mixins.RetrieveModelMixin,
                      mixins.CreateModelMixin,
                      mixins.DestroyModelMixin,
                      viewsets.GenericViewSet):
     permission_classes = [IsAuthenticated]
+    pagination_class = ProjectListPagination
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ["user__username"]
     search_fields = ["name"]
@@ -224,6 +234,28 @@ class AreaCoverageViewSet(mixins.ListModelMixin,
 
         _delete_areacoverage_files(instance)
         instance.delete()
+
+
+class MapTileServiceViewSet(viewsets.ModelViewSet):
+    """地图瓦片/图层接口配置（支持本地与公网地址）"""
+
+    serializer_class = MapTileServiceSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = None
+    filter_backends = [filters.OrderingFilter]
+    ordering_fields = ["sort_order", "id", "created_at"]
+    ordering = ["sort_order", "id"]
+
+    def get_queryset(self):
+        return MapTileService.objects.all()
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+    def destroy(self, request, *args, **kwargs):
+        if not (request.user.is_staff or request.user.is_superuser):
+            return Response({"message": "仅管理员可删除地图接口"}, status=status.HTTP_403_FORBIDDEN)
+        return super().destroy(request, *args, **kwargs)
 
 
 # class SitePlannerView(APIView):
@@ -601,9 +633,10 @@ class StationExportExcel(APIView):
             df.to_excel(excel_path, index=False, engine='openpyxl')
 
             # 更新数据库中的 Excel 路径
+            relative_media_path = f'/media/stations/{excel_name}'
             try:
                 area_coverage = AreaCoverage.objects.get(id=area_coverage_id)
-                area_coverage.excel_path = f'/media/stations/{excel_name}'
+                area_coverage.excel_path = relative_media_path
                 area_coverage.save()
             except AreaCoverage.DoesNotExist:
                 return Response(
@@ -611,9 +644,11 @@ class StationExportExcel(APIView):
                     status=status.HTTP_404_NOT_FOUND
                 )
 
-            return Response(
-                {'message': '站点数据已成功导出', 'file_url': area_coverage.excel_path},
-                status=status.HTTP_200_OK
+            # 直接以附件流返回，避免前端用相对 /media 路径打到 Vite 端口导致 404
+            return FileResponse(
+                open(excel_path, 'rb'),
+                as_attachment=True,
+                filename=excel_name,
             )
 
         except Exception as e:

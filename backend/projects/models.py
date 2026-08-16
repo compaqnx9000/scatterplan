@@ -166,3 +166,61 @@ class Stations(models.Model):
 
     area = models.ForeignKey(AreaCoverage, on_delete=models.CASCADE, related_name="stations")
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class MapTileService(models.Model):
+    """可配置的地图瓦片/图层服务（支持本地 GeoServer 与公网地址）"""
+
+    class ServiceType(models.TextChoices):
+        WMS = "wms", "WMS"
+        WMTS = "wmts", "WMTS"
+        XYZ = "xyz", "XYZ"
+
+    name = models.CharField(max_length=100, unique=True, verbose_name="接口名称")
+    service_type = models.CharField(
+        max_length=10,
+        choices=ServiceType.choices,
+        default=ServiceType.WMS,
+        verbose_name="服务类型",
+    )
+    url = models.CharField(
+        max_length=500,
+        verbose_name="服务地址",
+        help_text="本地示例: http://127.0.0.1:8080/geoserver/zk/wms 或 /geoserver/zk/wms；XYZ 需含 {z}/{x}/{y}",
+    )
+    layers = models.CharField(
+        max_length=200,
+        blank=True,
+        default="",
+        verbose_name="图层名",
+        help_text="WMS/WMTS 图层，如 zk:china_roadnet2",
+    )
+    format = models.CharField(max_length=50, default="image/png", verbose_name="图片格式")
+    tile_matrix_set_id = models.CharField(
+        max_length=50,
+        blank=True,
+        default="EPSG:4326",
+        verbose_name="WMTS矩阵集",
+    )
+    description = models.CharField(max_length=255, blank=True, default="", verbose_name="接口描述")
+    enabled = models.BooleanField(default=True, verbose_name="启用")
+    show_default = models.BooleanField(default=False, verbose_name="默认显示")
+    sort_order = models.IntegerField(default=0, verbose_name="排序")
+    created_by = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="map_tile_services",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["sort_order", "id"]
+        verbose_name = "地图接口服务"
+        verbose_name_plural = "地图接口服务"
+
+    def __str__(self):
+        return f"{self.name} ({self.service_type})"
+

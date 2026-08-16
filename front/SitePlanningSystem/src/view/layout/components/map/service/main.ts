@@ -9,6 +9,7 @@ let geoserverUrl = import.meta.env.VITE_APP_GEOSERVER_url;
 import { useWebSocket } from "./websocketService";
 import refreshToken from "@/request/refreshToken";
 import { ElMessage } from "element-plus";
+import { listMapServices } from "@/request/mapService";
 
 const Cesium = mars3d.Cesium;
 
@@ -33,6 +34,8 @@ export class main {
   $store: any;
   wsService: any;
   imageryLayers: mars3d.layer.GraphicLayer | null = null;
+  /** 由「地图接口服务」配置加载的业务图层 */
+  configuredMapLayers: mars3d.layer.BaseLayer[] = [];
   constructor(map: Map, $bus: any, $store: any) {
     this.map = map;
     this.$bus = $bus;
@@ -45,91 +48,11 @@ export class main {
     });
     this.map.addLayer(this.imageryLayers);
 
-    // 添加瓦片
-// const wmtsMap = new mars3d.layer.WmtsLayer({
-//     url: "http://192.100.30.16:8088/earthview/rest/services/tileserver/wmts",
-//     layer: "sfsj",
-//     style: "default",
-//     crs: mars3d.CRS.EPSG4326,
-//     tileMatrixSetID: "EPSG:4326",
-//     format: "image/png",
-//     // tileMatrixLabels:Array.from({ length: 11},(_,i)=>i.toString()),
-
-//     // minimumLevel:0,
-//     // maximumLevel:19,
-//     // minimumTerrainLevel:9,
-//     // maximumTerrainLevel:17,
-//     queryParameters: {
-//         serviceNmae: "sfsj",
-//         token: "undefined"
-//     },
-//     enablePickFeatures: true,
-// })
-// map.addLayer(wmtsMap);
-    // 添加路网
-    // 添加 GeoServer WMS 图层
-    // const geoserverWMS = new Cesium.WebMapServiceImageryProvider({
-    //   url: "http://localhost:8080/geoserver/zero/wms", // 替换为你的 GeoServer 地址
-    //   layers: "zero:DanDong", // 图层名称（工作区:图层）
-    //   parameters: { service: "WMS", version: "1.1.1", // WMS 版本
-    //   format: "image/png", // 输出格式
-    //   transparent: true, // 允许透明
-    //   srs: "EPSG:4326", // 坐标系（WGS84，与 Cesium 默认坐标系一致） },
-    //   enablePickFeatures: true, // 允许点击获取要素信息
-    // })
-    const tileLayer = new mars3d.layer.WmsLayer({
-      name: "路网",
-      url: "/geoserver/zk/wms",
-      // url: "/geoserver/zero/wms",
-      layers: "zk:china_roadnet2",
-      show: false,
-      parameters: {
-        service: "WMS", // 必选：指定服务类型
-        version: "1.1.1", // 必选：与 GeoServer 支持的版本一致
-        transparent: true,
-        format: "image/png",
-      },
-      getFeatureInfoParameters: {
-        feature_count: 10,
-      },
-      // 单击高亮及其样式
-      highlight: {
-        type: "wallP",
-        diffHeight: 100,
-        materialType: mars3d.MaterialType.LineFlow,
-        materialOptions: {
-          // image: "https://data.mars3d.cn/img/textures/fence.png",
-          color: "#ffff00",
-          speed: 10, // 速度，建议取值范围1-100
-          axisY: true,
-        },
-      },
-      // featureToGraphic: (feature, event) => {
-      //   const data = feature.data;
-      //   console.log("featureToGraphic", data);
-
-      //   // 自行加解析data的代码，下面是测试演示
-      //   const attr = {};
-      //   attr["名称"] = "皇岗村文化广场及音乐喷水泉";
-      //   attr["街道名称"] = "福田街道";
-      //   attr["社区名称"] = "皇岗社区";
-
-      //   // 返回graphic对应的构造参数
-      //   return {
-      //     type: "point",
-      //     position: event.cartesian,
-      //     style: {
-      //       color: "#ff0000",
-      //       pixelSize: 10,
-      //       outlineColor: "#ffffff",
-      //       outlineWidth: 2,
-      //     },
-      //     attr,
-      //   };
-      // },
-      // popup: "all",
+    // 从系统配置加载瓦片/图层服务（本地 GeoServer 或公网）
+    this.loadConfiguredMapServices();
+    $bus.on("reloadMapServices", () => {
+      this.loadConfiguredMapServices();
     });
-    map.addLayer(tileLayer);
 
     // 将 WMS 图层添加到地图
     // this.imageryLayers.addImageryProvider(geoserverWMS);
@@ -221,6 +144,115 @@ export class main {
     }, 1000);
   }
 
+  /**
+   * 加载「地图接口服务」中启用的瓦片图层
+   */
+  async loadConfiguredMapServices() {
+    // 先移除旧配置图层
+    this.configuredMapLayers.forEach((layer) => {
+      try {
+        this.map.removeLayer(layer, true);
+      } catch (e) {
+        console.warn("移除地图接口图层失败", e);
+      }
+    });
+    this.configuredMapLayers = [];
+
+    let services: any[] = [];
+    try {
+      const res: any = await listMapServices();
+      services = Array.isArray(res) ? res : res?.results || [];
+    } catch (e) {
+      console.warn("拉取地图接口配置失败，使用本地默认路网", e);
+    }
+
+    const enabled = services.filter((s) => s && s.enabled !== false);
+    const list =
+      enabled.length > 0
+        ? enabled
+        : [
+            {
+              id: 0,
+              name: "路网",
+              service_type: "wms",
+              url: "/geoserver/zk/wms",
+              layers: "zk:china_roadnet2",
+              format: "image/png",
+              show_default: false,
+            },
+          ];
+
+    list.forEach((item) => {
+      try {
+        const layer = this.createLayerFromConfig(item);
+        if (!layer) return;
+        this.map.addLayer(layer);
+        this.configuredMapLayers.push(layer);
+      } catch (e) {
+        console.error("加载地图接口失败", item, e);
+      }
+    });
+  }
+
+  createLayerFromConfig(item: any): mars3d.layer.BaseLayer | null {
+    const name = item.name || `map-service-${item.id}`;
+    const show = !!item.show_default;
+    const type = String(item.service_type || "wms").toLowerCase();
+    const url = String(item.url || "").trim();
+    if (!url) return null;
+
+    if (type === "wmts") {
+      return new mars3d.layer.WmtsLayer({
+        name,
+        url,
+        layer: item.layers,
+        style: "default",
+        format: item.format || "image/png",
+        tileMatrixSetID: item.tile_matrix_set_id || "EPSG:4326",
+        crs: mars3d.CRS.EPSG4326,
+        show,
+        attr: { mapServiceId: item.id },
+      });
+    }
+
+    if (type === "xyz") {
+      return new mars3d.layer.XyzLayer({
+        name,
+        url,
+        show,
+        attr: { mapServiceId: item.id },
+      });
+    }
+
+    // 默认 WMS
+    return new mars3d.layer.WmsLayer({
+      name,
+      url,
+      layers: item.layers,
+      show,
+      parameters: {
+        service: "WMS",
+        version: "1.1.1",
+        transparent: true,
+        format: item.format || "image/png",
+      },
+      getFeatureInfoParameters: {
+        feature_count: 10,
+      },
+      highlight: {
+        type: "wallP",
+        diffHeight: 100,
+        materialType: mars3d.MaterialType.LineFlow,
+        materialOptions: {
+          color: "#ffff00",
+          speed: 10,
+          axisY: true,
+        },
+      },
+      attr: { mapServiceId: item.id },
+    });
+  }
+
   // 设置地图图层显示
   setMapLayerShow(e: any) {
     const { name, show } = e;
@@ -286,6 +318,7 @@ export class main {
     // 监听连接打开
     this.wsService.onOpen(() => {
       console.log("WebSocket连接已打开");
+      this.$bus.emit("wsConnectionStatus", true);
 
       // 连接成功后可以发送初始化消息
       // wsService.send({
@@ -294,11 +327,19 @@ export class main {
       // });
     });
 
+    this.$bus.on("wsConnectionStatusRequest", () => {
+      this.$bus.emit(
+        "wsConnectionStatus",
+        this.wsService?.getStatus?.() === "OPEN"
+      );
+    });
+
     // 退出登录后断开 WS，并清掉地球上的绘制
     this.$bus.on("Logout", () => {
       this.$bus.emit("cancelDrawPoint");
       this.$bus.emit("mapPickMode", false);
       this.$bus.emit("clearAll");
+      this.$bus.emit("wsConnectionStatus", false);
       if (this.imageryLayers) {
         this.imageryLayers.clear();
       }
@@ -307,6 +348,11 @@ export class main {
       }
       if (this.wsService) {
         this.wsService.close(1000, "用户主动断开连接");
+      }
+    });
+    this.$bus.on("resetMapView", () => {
+      if (this.map && typeof (this.map as any).flyHome === "function") {
+        (this.map as any).flyHome({ duration: 1.2 });
       }
     });
     this.$bus.on("wsReconnect", () => {
@@ -439,6 +485,7 @@ export class main {
 
     // 监听连接关闭
     this.wsService.onClose(async (code: any, reason: any) => {
+      this.$bus.emit("wsConnectionStatus", false);
       // 刷新 token
       await refreshToken();
       console.log(`WebSocket关闭: ${code} - ${reason}`);
@@ -448,6 +495,7 @@ export class main {
 
     // 监听错误
     this.wsService.onError((error: any) => {
+      this.$bus.emit("wsConnectionStatus", false);
       console.error("WebSocket错误:", error);
     });
   }

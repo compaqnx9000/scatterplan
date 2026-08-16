@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Project, SingleLink, AreaCoverage, Stations
+from .models import Project, SingleLink, AreaCoverage, Stations, MapTileService
 
 
 class SingleLinkSerializer(serializers.ModelSerializer):
@@ -24,6 +24,62 @@ class StationsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Stations
         fields = "__all__"
+
+
+class MapTileServiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MapTileService
+        fields = [
+            "id",
+            "name",
+            "service_type",
+            "url",
+            "layers",
+            "format",
+            "tile_matrix_set_id",
+            "description",
+            "enabled",
+            "show_default",
+            "sort_order",
+            "created_by",
+            "created_at",
+            "updated_at",
+        ]
+        extra_kwargs = {
+            "created_by": {"read_only": True},
+        }
+
+    def validate_name(self, value):
+        name = (value or "").strip()
+        if not name:
+            raise serializers.ValidationError("请输入接口名称")
+        qs = MapTileService.objects.filter(name=name)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError("接口名称已存在")
+        return name
+
+    def validate_url(self, value):
+        url = (value or "").strip()
+        if not url:
+            raise serializers.ValidationError("请输入服务地址")
+        return url
+
+    def validate(self, attrs):
+        service_type = attrs.get("service_type") or getattr(self.instance, "service_type", "wms")
+        layers = attrs.get("layers")
+        if layers is None and self.instance:
+            layers = self.instance.layers
+        layers = (layers or "").strip()
+        if service_type in ("wms", "wmts") and not layers:
+            raise serializers.ValidationError({"layers": "WMS/WMTS 请填写图层名"})
+        if service_type == "xyz":
+            url = attrs.get("url") or getattr(self.instance, "url", "")
+            if "{z}" not in url or ("{x}" not in url and "{y}" not in url):
+                raise serializers.ValidationError({"url": "XYZ 地址需包含 {z}/{x}/{y} 占位符"})
+        attrs["layers"] = layers
+        return attrs
 
 
 class ProjectListSerializer(serializers.ModelSerializer):

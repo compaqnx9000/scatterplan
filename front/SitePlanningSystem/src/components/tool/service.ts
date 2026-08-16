@@ -30,7 +30,7 @@ export class Tool {
 
   // 面积测量
   area() {
-    this.measure.area({
+    return this.measure.area({
       style: {
         clampToGround: true,
       },
@@ -39,7 +39,7 @@ export class Tool {
 
   // 距离测量
   distance() {
-    this.measure.distance({
+    return this.measure.distance({
       style: {
         clampToGround: true,
       },
