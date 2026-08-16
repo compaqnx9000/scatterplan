@@ -1,5 +1,4 @@
 import axios from "axios";
-import { Toast } from "@/assets/util/index";
 import refreshToken from "@/request/refreshToken";
 
 // @ts-ignore
@@ -65,23 +64,46 @@ let errorCode: any = {
   default: "系统未知错误，请反馈给管理员",
 };
 
+function pickFirstText(value: any): string {
+  if (typeof value === "string" && value.trim()) return value;
+  if (Array.isArray(value) && value.length) return pickFirstText(value[0]);
+  if (value && typeof value === "object") {
+    return pickFirstText(value.string || value.msg || value.message || value.detail);
+  }
+  return "";
+}
+
+function pickServerMessage(data: any): string {
+  if (!data) return "";
+  if (typeof data === "string") return data.trim();
+  const direct = pickFirstText(data.message || data.detail || data.msg || data.username);
+  if (direct) return direct;
+  if (typeof data === "object") {
+    for (const value of Object.values(data)) {
+      const text = pickFirstText(value);
+      if (text) return text;
+    }
+  }
+  return "";
+}
+
 // 响应拦截器
 service.interceptors.response.use(
   (res) => {
     const code = res.status || 200;
     const msg = errorCode[code] || res.data.msg || errorCode.default;
     if (code === 401) {
-      Toast("登录状态已过期，请重新登录", 3000);
+      ElMessage.error("登录状态已过期，请重新登录");
       localStorage.removeItem("userToken");
       localStorage.removeItem("refreshToken");
       $store.commit("setToken", "");
       $store.commit("setRefreshToken", "");
       router.replace({ path: "/" });
     } else if (code === 500) {
-      Toast(msg, 3000);
+      ElMessage.error(msg);
       return Promise.reject("error");
     } else if (code !== 200 && code !== 204 && code !== 201) {
-      Toast(msg, 3000);
+      ElMessage.error(msg);
       return Promise.reject("error");
     } else {
       return res.data;
@@ -100,7 +122,7 @@ service.interceptors.response.use(
       console.log("refreshTokenValue", refreshTokenValue);
 
       if (!refreshTokenValue) {
-        Toast("登录状态已过期，请重新登录", 3000);
+        ElMessage.error("登录状态已过期，请重新登录");
         localStorage.removeItem("userToken");
         localStorage.removeItem("refreshToken");
         $store.commit("setToken", "");
@@ -131,7 +153,7 @@ service.interceptors.response.use(
         config.headers["Authorization"] = "Bearer " + newAccessToken;
         return service(config);
       } catch (refreshError) {
-        Toast("登录状态已过期，请重新登录", 3000);
+        ElMessage.error("登录状态已过期，请重新登录");
         localStorage.removeItem("userToken");
         localStorage.removeItem("refreshToken");
         $store.commit("setToken", "");
@@ -142,22 +164,19 @@ service.interceptors.response.use(
     }
 
     let { message } = error;
-    let msg =
-      error.response?.data?.message ||
-      error.response?.data?.detail ||
-      error.response?.data?.username ||
-      "";
-    if (message == "Network Error") {
+    const serverMsg = pickServerMessage(error.response?.data);
+    if (serverMsg) {
+      message = serverMsg;
+    } else if (message == "Network Error") {
       message = "后端接口连接异常";
     } else if (message?.includes("timeout")) {
       message = "系统接口请求超时";
     } else if (message?.includes("Request failed with status code")) {
       message = "系统接口" + message.substr(message.length - 3) + "异常";
     }
-    if (msg) {
-      message = msg;
+    if (!error.config?.silentError) {
+      ElMessage.error(message);
     }
-    Toast(message, 3000);
     return Promise.reject(error);
   }
 );

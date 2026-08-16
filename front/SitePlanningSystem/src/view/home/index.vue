@@ -65,6 +65,7 @@
     </div>
     <!-- 新建工程 -->
     <NewProjectDialog
+      ref="newProjectDialogRef"
       :visible="showNewProjectDialog"
       @update:visible="(val) => (showNewProjectDialog = val)"
       @confirm="handleNewProjectConfirm"
@@ -944,9 +945,11 @@ const onRequestCloseProject = async () => {
   resetAppToInitial();
 };
 
+const newProjectDialogRef = ref<{ applyServerError?: (msg: string) => void } | null>(null);
+
 const handleNewProjectConfirm = async (name: string) => {
   try {
-    const res: any = await createProject({ name });
+    const res: any = await createProject({ name }, { silentError: true });
     currentProjectId.value = res.id;
     drawLaunchSiteForm.name = name;
     railFullUnlock.value = false;
@@ -956,8 +959,12 @@ const handleNewProjectConfirm = async (name: string) => {
     emitWorkflowPointState();
   } catch (error: any) {
     const data = error?.response?.data;
-    const msg = data?.name?.[0] || data?.msg || "创建工程失败";
-    ElMessage.error(typeof msg === "string" ? msg : "创建工程失败");
+    const fieldMsg = Array.isArray(data?.name) ? data.name[0] : "";
+    if (fieldMsg) {
+      newProjectDialogRef.value?.applyServerError?.(fieldMsg);
+      return;
+    }
+    ElMessage.error(typeof data?.detail === "string" ? data.detail : "创建工程失败");
   }
 };
 

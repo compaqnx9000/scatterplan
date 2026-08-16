@@ -8,16 +8,19 @@ export function Toast(msg:string, duration:number) {
         font-size: 14px;
         color: rgb(255, 255, 255);
         background-color: rgba(0, 0, 0, .8);
-        padding: 10px 15px;
-        margin: 0 0 0 -60px;
-        border-radius: 4px;
+        padding: 10px 16px;
+        margin: 0;
+        border-radius: 8px;
         position: fixed;
         top: 50%;
         left: 50%;
-        width: 180px;
+        transform: translate(-50%, -50%);
+        width: auto;
+        max-width: 80vw;
         z-index:9999999;
         overflow:hidden;
-        text-align: center;`;
+        text-align: center;
+        white-space: nowrap;`;
     document.body.appendChild(m);
     setTimeout(function() {
         var d = 0.5;

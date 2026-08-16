@@ -54,6 +54,7 @@
               @keyup.enter="handleConfirm"
             />
           </el-form-item>
+          <p v-if="serverError" class="new-project__hint">{{ serverError }}</p>
         </el-form>
 
         <div class="new-project__footer">
@@ -83,12 +84,40 @@ const emit = defineEmits(["update:visible", "confirm"]);
 
 const formRef = ref(null);
 const form = reactive({ name: "" });
+const serverError = ref("");
 const rules = {
   name: [
     { required: true, message: "请输入工程名称", trigger: "change" },
     { validator: validateFileName, trigger: ["blur", "change"] },
+    {
+      validator: (_rule: unknown, _value: unknown, callback: (err?: Error) => void) => {
+        if (serverError.value) callback(new Error(serverError.value));
+        else callback();
+      },
+      trigger: "change",
+    },
   ],
 };
+
+const clearServerError = () => {
+  if (!serverError.value) return;
+  serverError.value = "";
+  nextTick(() => (formRef.value as any)?.clearValidate?.("name"));
+};
+
+const applyServerError = async (msg: string) => {
+  serverError.value = msg || "工程名称已存在";
+  await nextTick();
+  const formEl = formRef.value as any;
+  try {
+    await formEl?.validateField?.("name");
+  } catch {
+    // expected: mark the field as error so it can shake
+  }
+  shakeInvalidFormFields(formEl);
+};
+
+defineExpose({ applyServerError });
 
 const panelRef = ref<HTMLElement | null>(null);
 const panelPos = ref({ x: 0, y: 0 });
@@ -151,6 +180,7 @@ const stopDrag = () => {
 const handleConfirm = async () => {
   const formEl = formRef.value as any;
   if (!formEl) return;
+  serverError.value = "";
   try {
     await formEl.validate();
   } catch {
@@ -165,10 +195,18 @@ const setVisible = (val: boolean) => {
 };
 
 watch(
+  () => form.name,
+  () => {
+    clearServerError();
+  }
+);
+
+watch(
   () => props.visible,
   (val) => {
     if (val) {
       form.name = "";
+      serverError.value = "";
       nextTick(() => formElClear());
       centerPanel();
     }
@@ -389,6 +427,17 @@ onBeforeUnmount(() => {
         box-shadow: 0 0 30px rgba(157, 223, 46, 0.6);
       }
     }
+  }
+
+  &__hint {
+    margin: 8px 0 0;
+    text-align: center;
+    color: #ffb4ab;
+    font-family: Inter, "Noto Sans SC", sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    word-break: normal;
   }
 
   :deep(.el-form-item) {

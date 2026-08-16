@@ -9,11 +9,12 @@ export function listProjects(query: any) {
   });
 }
 
-export function createProject(data: { name: string }) {
+export function createProject(data: { name: string }, extra: Record<string, any> = {}) {
   return service({
     url: "/projects/plans/",
     method: "post",
     data,
+    ...extra,
   });
 }
 
