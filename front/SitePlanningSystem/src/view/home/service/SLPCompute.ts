@@ -1,5 +1,6 @@
 import * as mars3d from "mars3d";
 import { MAP_LABEL_FONT } from "./mapLabelStyle";
+import { publicAsset } from "./publicAsset";
 
 /**
  * 单链路计算接受点图层服务配置
@@ -150,7 +151,7 @@ export default class SLPComputeService {
 
       graphic.setOptions({
         style: {
-          image: "/images/end_point.png",
+          image: publicAsset("images/end_point.png"),
         },
       });
       this.graphicLayer.addGraphic(graphic);
@@ -179,7 +180,7 @@ export default class SLPComputeService {
       name: type,
       position: [lng, lat],
       style: {
-        image: "/images/end_point.png",
+        image: publicAsset("images/end_point.png"),
         horizontalOrigin: mars3d.Cesium.HorizontalOrigin.CENTER,
         verticalOrigin: mars3d.Cesium.VerticalOrigin.BOTTOM,
         scale: 0.4,

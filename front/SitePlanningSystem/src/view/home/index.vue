@@ -462,6 +462,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { formatDecimal6 } from "@/view/systemData/useGothamPanel";
 import { parseLongitude, parseLatitude, formatLongitude, formatLatitude } from "@/view/home/service/rules";
 import { rememberCurrentProjectId } from "@/view/home/service/projectSession";
+import { publicAsset } from "@/view/home/service/publicAsset";
 
 
 
@@ -2293,7 +2294,7 @@ const addBillboard = (position: number[], name: string, label: string) => {
     name: name,
     position: position,
     style: {
-      image: name === 'LaunchSite' ? "/images/start_point.png" : "/images/end_point.png",
+      image: name === 'LaunchSite' ? publicAsset("images/start_point.png") : publicAsset("images/end_point.png"),
       horizontalOrigin: mars3d.Cesium.HorizontalOrigin.CENTER,
       verticalOrigin: mars3d.Cesium.VerticalOrigin.BOTTOM,
       scale: 0.3,

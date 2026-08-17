@@ -1,14 +1,17 @@
 <template>
     <div id="mars3dContainer" class="mars3dContainer"></div>
-    <div class="map-status" aria-hidden="true">
-        <div class="map-status__scale">
-            <span class="map-status__scale-label">{{ scaleLabel }}</span>
-            <span class="map-status__scale-bar" :style="{ width: scaleBarWidth + 'px' }"></span>
-        </div>
-        <div class="map-status__divider"></div>
-        <div class="map-status__coord">
-            <span>经度 {{ lngText }}°</span>
-            <span>纬度 {{ latText }}°</span>
+    <div class="map-hud">
+        <div id="map-toast-host" class="map-toast-host" aria-live="polite"></div>
+        <div class="map-status" aria-hidden="true">
+            <div class="map-status__scale">
+                <span class="map-status__scale-label">{{ scaleLabel }}</span>
+                <span class="map-status__scale-bar" :style="{ width: scaleBarWidth + 'px' }"></span>
+            </div>
+            <div class="map-status__divider"></div>
+            <div class="map-status__coord">
+                <span>经度 {{ lngText }}°</span>
+                <span>纬度 {{ latText }}°</span>
+            </div>
         </div>
     </div>
 </template>
@@ -126,11 +129,34 @@ onBeforeUnmount(() => {
     left: -9999px !important;
 }
 
-.map-status {
+.map-hud {
     position: fixed;
     right: 16px;
     bottom: 16px;
-    z-index: 1000;
+    z-index: 2400;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+    pointer-events: none;
+    box-sizing: border-box;
+}
+
+.map-toast-host {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    width: 340px;
+    max-width: calc(100vw - 32px);
+    min-height: 0;
+}
+
+.map-toast-host:empty {
+    display: none;
+}
+
+.map-status {
     pointer-events: none;
     display: flex;
     align-items: center;

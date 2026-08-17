@@ -3,6 +3,7 @@ import * as mars3d from "mars3d";
 import { Label } from "mars3d-cesium";
 import { MAP_LABEL_FONT } from "./mapLabelStyle";
 import { parseLongitude, parseLatitude } from "./rules";
+import { publicAsset } from "./publicAsset";
 
 export interface CommunicationArea {
   id: number;
@@ -755,7 +756,7 @@ export default class CommunicationAreaService {
         name: "cluster_point" + index,
         position: [lng, lat],
         style: {
-          image: "/images/def2_point.png",
+          image: publicAsset("images/def2_point.png"),
           horizontalOrigin: mars3d.Cesium.HorizontalOrigin.CENTER,
           verticalOrigin: mars3d.Cesium.VerticalOrigin.BOTTOM,
           scale: 0.3,
@@ -795,7 +796,7 @@ export default class CommunicationAreaService {
         name: "relay_cluster_point" + index,
         position: [lng, lat],
         style: {
-          image: "/images/def2_point.png",
+          image: publicAsset("images/def2_point.png"),
           horizontalOrigin: mars3d.Cesium.HorizontalOrigin.CENTER,
           verticalOrigin: mars3d.Cesium.VerticalOrigin.BOTTOM,
           scale: 0.3,
@@ -827,7 +828,7 @@ export default class CommunicationAreaService {
       name: "relay_station",
       position: [center.center[0], center.center[1]],
       style: {
-        image: "/images/def2_point.png",
+        image: publicAsset("images/def2_point.png"),
         horizontalOrigin: mars3d.Cesium.HorizontalOrigin.CENTER,
         verticalOrigin: mars3d.Cesium.VerticalOrigin.BOTTOM,
         scale: 0.3,

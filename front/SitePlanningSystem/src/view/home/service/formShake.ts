@@ -1,3 +1,19 @@
+export function shakeElements(targets: Array<HTMLElement | null | undefined>) {
+  requestAnimationFrame(() => {
+    targets.forEach((target) => {
+      if (!target) return;
+      target.classList.remove("field-shake");
+      void target.offsetWidth;
+      target.classList.add("field-shake");
+      const onEnd = () => {
+        target.classList.remove("field-shake");
+        target.removeEventListener("animationend", onEnd);
+      };
+      target.addEventListener("animationend", onEnd);
+    });
+  });
+}
+
 /** Shake invalid form controls when validation fails (no error text). */
 export function shakeInvalidFormFields(formEl: { $el?: HTMLElement } | HTMLElement | null | undefined) {
   const run = () => {

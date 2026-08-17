@@ -1,6 +1,7 @@
 import { position } from "html2canvas/dist/types/css/property-descriptors/position";
 import * as mars3d from "mars3d";
 import { MAP_LABEL_FONT } from "./mapLabelStyle";
+import { publicAsset } from "./publicAsset";
 /**
  * 单链路图层和矢量管理服务
  */
@@ -113,7 +114,7 @@ export default class SingleLinkService {
       position: [lng, lat],
 
       style: {
-        image: "/images/start_point.png",
+        image: publicAsset("images/start_point.png"),
         horizontalOrigin: mars3d.Cesium.HorizontalOrigin.CENTER,
         verticalOrigin: mars3d.Cesium.VerticalOrigin.BOTTOM,
         scale: 0.4,
@@ -186,7 +187,7 @@ export default class SingleLinkService {
 
       graphic.setOptions({
         style: {
-          image: "/images/start_point.png",
+          image: publicAsset("images/start_point.png"),
         },
       });
       // 添加到图层

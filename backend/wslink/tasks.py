@@ -734,7 +734,12 @@ def calculate_clustering(user_id: int, channel_name: str, data: dict, area_type:
         # 结果处理与路网匹配
         # 预编译 SQL，复用 cursor
         road_query_sql = """
-            WITH user_point AS (SELECT ST_SetSRID(ST_MakePoint(%s, %s), 4326) AS geom)
+            WITH user_point AS (
+                SELECT ST_SetSRID(
+                    ST_MakePoint(%s::double precision, %s::double precision),
+                    4326
+                ) AS geom
+            )
             SELECT gid, name, 
                    ST_X(ST_ClosestPoint(nr.geom, up.geom)) as r_lon,
                    ST_Y(ST_ClosestPoint(nr.geom, up.geom)) as r_lat,
@@ -749,7 +754,7 @@ def calculate_clustering(user_id: int, channel_name: str, data: dict, area_type:
             result_stations = []
             # print(cluster_stats)
             for i, info in enumerate(cluster_stats):
-                lon, lat = info['min_loss_point']
+                lon, lat = float(info['min_loss_point'][0]), float(info['min_loss_point'][1])
                 elevation = info['min_loss_evl']
 
                 # 禁区判断 (如果在禁区内则跳过)

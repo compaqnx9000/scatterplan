@@ -53,25 +53,33 @@
         <label class="login-modal__field">
           <span class="login-modal__label">USERNAME</span>
           <input
+            ref="userInputRef"
             v-model="loginData.userName"
             class="login-modal__input"
+            :class="{ 'is-error': errorFields.userName }"
             type="text"
             autocomplete="username"
             placeholder=""
+            @input="clearAuthError"
           />
         </label>
 
         <label class="login-modal__field">
           <span class="login-modal__label">PASSWORD</span>
           <input
+            ref="passInputRef"
             v-model="loginData.password"
             class="login-modal__input"
+            :class="{ 'is-error': errorFields.password }"
             type="password"
             autocomplete="current-password"
             placeholder=""
             @keyup.enter="checkLogin"
+            @input="clearAuthError"
           />
         </label>
+
+        <p v-if="authError" class="login-modal__hint">{{ authError }}</p>
 
         <button class="login-modal__submit" type="submit" :disabled="pageData.loginLoading">
           {{ pageData.loginLoading ? "..." : "ENTER" }}
@@ -83,11 +91,11 @@
 
 <script lang="ts" setup>
 //@ts-nocheck
-import { reactive, onMounted, watch, getCurrentInstance } from "vue";
+import { reactive, ref, onMounted, watch, getCurrentInstance } from "vue";
 import { useRouter } from "vue-router";
 import store from "@/store/index";
 import { login } from "@/request/user";
-import { ElMessage } from "element-plus";
+import { shakeElements } from "@/view/home/service/formShake";
 
 const props = defineProps({
   visible: {
@@ -109,6 +117,51 @@ const loginData: any = reactive({
   password: "",
 });
 
+const userInputRef = ref<HTMLInputElement | null>(null);
+const passInputRef = ref<HTMLInputElement | null>(null);
+const authError = ref("");
+const errorFields = reactive({
+  userName: false,
+  password: false,
+});
+
+const clearAuthError = () => {
+  if (!authError.value && !errorFields.userName && !errorFields.password) return;
+  authError.value = "";
+  errorFields.userName = false;
+  errorFields.password = false;
+};
+
+const showAuthError = (message: string, fields: { userName?: boolean; password?: boolean }) => {
+  authError.value = message;
+  errorFields.userName = !!fields.userName;
+  errorFields.password = !!fields.password;
+  shakeElements([
+    fields.userName ? userInputRef.value : null,
+    fields.password ? passInputRef.value : null,
+  ]);
+};
+
+const loginErrorText = (error: any) => {
+  const status = error?.response?.status;
+  if (status === 400 || status === 401 || status === 403) {
+    return "用户名或密码不正确";
+  }
+  const data = error?.response?.data;
+  if (typeof data === "string" && data.trim()) return data.trim();
+  const detail = data?.detail || data?.message || data?.msg;
+  if (typeof detail === "string" && detail.trim()) {
+    if (/credential|no active account|password|username/i.test(detail)) {
+      return "用户名或密码不正确";
+    }
+    return detail.trim();
+  }
+  const raw = error?.message || "";
+  if (raw === "Network Error") return "后端接口连接异常";
+  if (String(raw).includes("timeout")) return "系统接口请求超时";
+  return "登录失败";
+};
+
 const loadRemembered = () => {
   const localLoginInfo: any = localStorage.getItem("loginData");
   if (localLoginInfo) {
@@ -124,17 +177,26 @@ onMounted(loadRemembered);
 watch(
   () => props.visible,
   (val) => {
-    if (val) loadRemembered();
+    if (val) {
+      loadRemembered();
+      clearAuthError();
+    }
   }
 );
 
 async function checkLogin() {
-  if (!loginData.userName) {
-    ElMessage.error("请输入用户名");
+  const hasUser = !!String(loginData.userName || "").trim();
+  const hasPass = !!String(loginData.password || "");
+  if (!hasUser && !hasPass) {
+    showAuthError("请输入用户名和密码", { userName: true, password: true });
     return;
   }
-  if (!loginData.password) {
-    ElMessage.error("请输入密码");
+  if (!hasUser) {
+    showAuthError("请输入用户名", { userName: true });
+    return;
+  }
+  if (!hasPass) {
+    showAuthError("请输入密码", { password: true });
     return;
   }
 
@@ -171,7 +233,7 @@ async function checkLogin() {
     const bus = getCurrentInstance()?.appContext.config.globalProperties.$bus;
     bus?.emit("wsReconnect");
   } catch (error) {
-    // request layer already toasts
+    showAuthError(loginErrorText(error), { userName: true, password: true });
   } finally {
     pageData.loginLoading = false;
   }
@@ -262,10 +324,20 @@ async function checkLogin() {
     gap: 18px;
   }
 
+  &__hint {
+    margin: -6px 0 0;
+    text-align: center;
+    color: #ffb4ab;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+  }
+
   &__field {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    overflow: visible;
   }
 
   &__label {
@@ -288,6 +360,14 @@ async function checkLogin() {
 
     &:focus {
       box-shadow: inset 0 0 0 1px rgba(240, 192, 0, 0.45);
+    }
+
+    &.is-error {
+      box-shadow: inset 0 0 0 1px #ffb4ab;
+    }
+
+    &.is-error:focus {
+      box-shadow: inset 0 0 0 1px #ffb4ab;
     }
   }
 

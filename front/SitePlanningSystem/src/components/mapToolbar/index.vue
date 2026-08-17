@@ -331,7 +331,7 @@
               </button>
               <button class="open-project-dialog__btn open-project-dialog__btn--primary" type="button" @click="confirmOpenProject">
                 <span class="material-symbols-outlined">check</span>
-                确认
+                打开
               </button>
             </div>
           </div>

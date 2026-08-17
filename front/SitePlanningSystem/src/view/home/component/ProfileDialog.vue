@@ -306,6 +306,7 @@
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import * as echarts from "echarts";
 import { formatLongitude, formatLatitude } from "@/view/home/service/rules";
+import { ECHARTS_CJK_FONT, echartsTextStyle, waitEchartsFonts } from "@/view/home/service/echartsFont";
 
 const props = defineProps({
   visible: {
@@ -586,21 +587,19 @@ const disposeChart = () => {
 
 const renderChart = async () => {
   if (!props.visible || !hasDenseSamples.value) return;
+  await waitEchartsFonts();
   await nextTick();
   const el = chartRef.value;
   if (!el) return;
 
-  // v-if 关闭对话框会销毁容器，必须重新 init，否则第二次打开是空白
-  if (chart && chart.getDom() !== el) {
-    disposeChart();
-  }
-  if (!chart) {
-    chart = echarts.init(el, undefined, {
-      width: Math.max(1, el.clientWidth),
-      height: Math.max(1, el.clientHeight),
-    });
-    bindChartResize();
-  }
+  // SVG 用页面 CSS 字体回退，避免 Canvas 在 Linux/未加载完的 Noto 子集上画出方框
+  if (chart) disposeChart();
+  chart = echarts.init(el, undefined, {
+    renderer: "svg",
+    width: Math.max(1, el.clientWidth),
+    height: Math.max(1, el.clientHeight),
+  });
+  bindChartResize();
   if (!chart) return;
 
   const samples = denseSamples.value;
@@ -612,31 +611,52 @@ const renderChart = async () => {
     [pathDistance.value, rxHeight.value],
   ].filter((p) => Number.isFinite(p[0]) && Number.isFinite(p[1]));
 
+  const axisText = { color: "#8b8790", fontFamily: ECHARTS_CJK_FONT };
+
   chart.setOption({
     backgroundColor: "transparent",
-    grid: { left: 36, right: 12, top: 16, bottom: 28 },
+    textStyle: echartsTextStyle,
+    title: {
+      text: "高程剖面",
+      left: "center",
+      top: 4,
+      textStyle: { color: "#c0c8c3", fontSize: 12, fontWeight: 500, fontFamily: ECHARTS_CJK_FONT },
+    },
+    legend: {
+      show: true,
+      top: 22,
+      left: 100,
+      itemWidth: 10,
+      itemHeight: 8,
+      itemGap: 10,
+      textStyle: { color: "#c0c8c3", fontSize: 11, fontFamily: ECHARTS_CJK_FONT },
+      data: ["高程", "发射点", "障碍物", "散射体", "接收点"],
+    },
+    grid: { left: 52, right: 16, top: 52, bottom: 32 },
     tooltip: {
       trigger: "axis",
       backgroundColor: "rgba(26,34,44,0.92)",
       borderColor: "rgba(180,200,220,0.18)",
-      textStyle: { color: "#e8e2d2", fontSize: 12 },
+      textStyle: { color: "#e8e2d2", fontSize: 12, fontFamily: ECHARTS_CJK_FONT },
       valueFormatter: (v: number) => `${v} m`,
     },
     xAxis: {
       type: "value",
-      name: "km",
-      nameTextStyle: { color: "#8b8790" },
+      name: "距离 (km)",
+      nameTextStyle: axisText,
       axisLine: { lineStyle: { color: "#3a4552" } },
-      axisLabel: { color: "#8b8790", fontSize: 10 },
+      axisLabel: { ...axisText, fontSize: 10 },
       splitLine: { lineStyle: { color: "rgba(58,69,82,0.55)" } },
     },
     yAxis: {
       type: "value",
       min: 0,
-      name: "m",
-      nameTextStyle: { color: "#8b8790" },
+      name: "高程 (m)",
+      nameLocation: "end",
+      nameGap: 8,
+      nameTextStyle: { ...axisText, align: "left" },
       axisLine: { lineStyle: { color: "#3a4552" } },
-      axisLabel: { color: "#8b8790", fontSize: 10 },
+      axisLabel: { ...axisText, fontSize: 10 },
       splitLine: { lineStyle: { color: "rgba(58,69,82,0.55)" } },
     },
     series: [
@@ -1131,12 +1151,17 @@ onBeforeUnmount(() => {
 .insight-chart {
   width: 100%;
   max-width: 100%;
-  height: 180px;
+  height: 220px;
   border-radius: 0.5rem;
   background: #07100b;
   border: 1px solid rgba(64, 73, 69, 0.5);
   overflow: hidden;
   box-sizing: border-box;
+  font-family: "Microsoft YaHei", "微软雅黑", "PingFang SC", "Noto Sans SC", sans-serif;
+
+  :deep(text) {
+    font-family: "Microsoft YaHei", "微软雅黑", "PingFang SC", "Noto Sans SC", sans-serif !important;
+  }
 
   :deep(> div) {
     width: 100% !important;

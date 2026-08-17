@@ -17,6 +17,7 @@
           </button>
         </div>
 
+        <div class="results-panel__body">
         <div class="results-panel__toolbar">
           <div class="results-panel__search">
             <div class="results-panel__seg">
@@ -44,8 +45,8 @@
               :placeholder="queryField === 'user' ? '请输入用户名称' : '请输入工程名称'"
               @keyup.enter="handleSearch"
             />
+            <button class="results-panel__search-btn" type="button" @click="handleSearch">查询</button>
           </div>
-          <button class="results-panel__btn results-panel__btn--primary" type="button" @click="handleSearch">查询</button>
         </div>
 
         <div class="results-panel__table">
@@ -80,10 +81,9 @@
             </el-table-column>
             <el-table-column prop="updated_at" label="更新时间" align="center" header-align="center" min-width="168" />
 
-            <el-table-column label="操作" align="center" header-align="center" width="150" fixed="right">
+            <el-table-column label="操作" align="center" header-align="center" width="90">
               <template #default="scope">
                 <div class="results-panel__row-actions">
-                  <button class="results-panel__link" type="button" @click="handleView(scope.row)">查看详情</button>
                   <button class="results-panel__link results-panel__link--danger" type="button" @click="handleDelete(scope.row)">
                     删除
                   </button>
@@ -91,6 +91,7 @@
               </template>
             </el-table-column>
           </el-table>
+        </div>
         </div>
 
         <div class="results-panel__footer">
@@ -116,7 +117,7 @@
 <script lang="ts" setup>
 //@ts-nocheck
 
-import { computed, getCurrentInstance, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { listProjects, deleteProject } from "@/request/sitePlanting";
 
@@ -124,7 +125,6 @@ const props = defineProps({
   visible: { type: Boolean, default: false },
 });
 const emit = defineEmits(["update:visible"]);
-const $bus = getCurrentInstance()?.appContext.config.globalProperties.$bus;
 const queryField = ref<"name" | "user">("name");
 const keyword = ref("");
 
@@ -259,11 +259,6 @@ const handleSelectionChange = (selection: any[]) => {
   multiple.value = !selection.length;
 };
 
-const handleView = (row: any) => {
-  handleClose();
-  $bus?.emit("openProjectById", row.id);
-};
-
 const handleDelete = (row?: any) => {
   const deleteIds = row ? [row.id] : ids.value;
   ElMessageBox.confirm("确认删除选中工程? 工程内的链路、覆盖和站点会一并删除。", "警告", {
@@ -318,6 +313,34 @@ onBeforeUnmount(() => {
 @import "@/styles/gotham-panel.scss";
 
 .results-panel {
+  .results-panel__body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px 24px 8px;
+  }
+
+  .results-panel__toolbar,
+  .results-panel__table {
+    margin: 0;
+    width: 100%;
+    scrollbar-gutter: auto;
+  }
+
+  :deep(.el-table),
+  :deep(.el-table__inner-wrapper),
+  :deep(.el-table__header-wrapper),
+  :deep(.el-table__body-wrapper) {
+    width: 100% !important;
+  }
+
+  :deep(.el-table col[name="gutter"]),
+  :deep(.el-table th.gutter),
+  :deep(.el-table col.gutter) {
+    display: none !important;
+    width: 0 !important;
+  }
+
   :deep(.el-table th.el-table__cell),
   :deep(.el-table td.el-table__cell),
   :deep(.el-table .cell) {

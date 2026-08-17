@@ -13,7 +13,8 @@ export function login(username: string, password: string){
     headers: {
       isToken: false,
     },
-  });
+    silentError: true,
+  } as any);
 }
 // 获取验证码
 export function captchaImage(){
