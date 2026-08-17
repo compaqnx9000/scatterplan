@@ -1,8 +1,8 @@
 <template>
     <div id="mars3dContainer" class="mars3dContainer"></div>
-    <div class="map-hud">
+    <div ref="hudRef" class="map-hud">
         <div id="map-toast-host" class="map-toast-host" aria-live="polite"></div>
-        <div class="map-status" aria-hidden="true">
+        <div ref="statusRef" class="map-status" aria-hidden="true">
             <div class="map-status__scale">
                 <span class="map-status__scale-label">{{ scaleLabel }}</span>
                 <span class="map-status__scale-bar" :style="{ width: scaleBarWidth + 'px' }"></span>
@@ -17,7 +17,7 @@
 </template>
 
 <script lang="ts" setup>
-import { getCurrentInstance, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { getCurrentInstance, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { map3dConfig } from "./config/config"
 import * as mars3d from "mars3d"
 import { main } from "./service/main"
@@ -39,6 +39,19 @@ const lngText = ref("--");
 const latText = ref("--");
 const scaleLabel = ref("--");
 const scaleBarWidth = ref(72);
+const hudRef = ref<HTMLElement | null>(null);
+const statusRef = ref<HTMLElement | null>(null);
+let statusObserver: ResizeObserver | null = null;
+
+const syncHudSize = () => {
+    const status = statusRef.value;
+    const hud = hudRef.value;
+    if (!status || !hud) return;
+    const rect = status.getBoundingClientRect();
+    if (rect.width < 8 || rect.height < 8) return;
+    hud.style.setProperty("--map-status-width", `${Math.round(rect.width)}px`);
+    hud.style.setProperty("--map-status-height", `${Math.round(rect.height)}px`);
+};
 
 watch(
     () => router.currentRoute.value.path,
@@ -102,11 +115,21 @@ onMounted(() => {
     }
     syncScaleFromLegend();
     window.setTimeout(syncScaleFromLegend, 300);
+
+    nextTick(() => {
+        syncHudSize();
+        if (statusRef.value && typeof ResizeObserver !== "undefined") {
+            statusObserver = new ResizeObserver(syncHudSize);
+            statusObserver.observe(statusRef.value);
+        }
+    });
 });
 
 onBeforeUnmount(() => {
     if (map) map.off(mars3d.EventType.mouseMove, showMouseCoordinates);
     if (distanceLegend?.off) distanceLegend.off(mars3d.EventType.change, syncScaleFromLegend);
+    statusObserver?.disconnect();
+    statusObserver = null;
 });
 </script>
 
@@ -130,6 +153,8 @@ onBeforeUnmount(() => {
 }
 
 .map-hud {
+    --map-status-width: 240px;
+    --map-status-height: 48px;
     position: fixed;
     right: 16px;
     bottom: 16px;
@@ -137,7 +162,8 @@ onBeforeUnmount(() => {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 10px;
+    gap: 0;
+    max-width: calc(100vw - 32px);
     pointer-events: none;
     box-sizing: border-box;
 }
@@ -146,14 +172,17 @@ onBeforeUnmount(() => {
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 8px;
-    width: 340px;
-    max-width: calc(100vw - 32px);
-    min-height: 0;
+    width: var(--map-status-width);
+    height: calc(var(--map-status-height) * 3);
+    margin-bottom: 10px;
+    box-sizing: border-box;
+    overflow: hidden;
 }
 
 .map-toast-host:empty {
-    display: none;
+    height: 0;
+    margin-bottom: 0;
+    overflow: hidden;
 }
 
 .map-status {

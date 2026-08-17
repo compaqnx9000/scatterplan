@@ -47,7 +47,7 @@ app.component("CommonDialog", CommonDialog);
 app.config.globalProperties.$bus = mitt();
 
 messageDefaults.placement = "bottom-right";
-messageDefaults.grouping = true;
+messageDefaults.grouping = false;
 messageDefaults.offset = 80;
 messageDefaults.customClass = "map-toast";
 messageDefaults.appendTo = "#map-toast-host" as unknown as HTMLElement;

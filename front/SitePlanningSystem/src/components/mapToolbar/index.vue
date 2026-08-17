@@ -859,12 +859,12 @@ const onProfileReady = (ready: boolean) => {
 };
 
 const onLinkAnalysisReady = (ready: boolean) => {
-  const next = !!ready;
-  const unlocked = next && !linkAnalysisReady.value;
-  linkAnalysisReady.value = next;
-  if (unlocked && !railFull.value) {
-    ElMessage.info("链路计算完成");
-  }
+  linkAnalysisReady.value = !!ready;
+};
+
+const onLinkComputed = () => {
+  ElMessage.closeAllByPlacement?.("bottom-right");
+  ElMessage.info({ message: "链路计算完成", grouping: false });
 };
 
 const onRailFull = (full: boolean) => {
@@ -923,6 +923,7 @@ onMounted(async () => {
   $bus?.on("workflowLinkReady", onLinkReady);
   $bus?.on("workflowProfileReady", onProfileReady);
   $bus?.on("workflowLinkAnalysisReady", onLinkAnalysisReady);
+  $bus?.on("workflowLinkComputed", onLinkComputed);
   $bus?.on("workflowRailFull", onRailFull);
   $bus?.on("workflowProfileLoading", onProfileLoading);
   $bus?.on("workflowActive", onWorkflowActive);
@@ -956,6 +957,7 @@ onUnmounted(() => {
   $bus?.off("workflowLinkReady", onLinkReady);
   $bus?.off("workflowProfileReady", onProfileReady);
   $bus?.off("workflowLinkAnalysisReady", onLinkAnalysisReady);
+  $bus?.off("workflowLinkComputed", onLinkComputed);
   $bus?.off("workflowRailFull", onRailFull);
   $bus?.off("workflowProfileLoading", onProfileLoading);
   $bus?.off("workflowActive", onWorkflowActive);

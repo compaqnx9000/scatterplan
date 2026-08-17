@@ -1714,6 +1714,7 @@ const setSingleLinkFormData = (message: any) => {
   lastLinkPointKey.value = currentLinkPointKey();
   if (!hasProfileReturn()) snapshotProfileReturn();
   $bus.emit("workflowLinkAnalysisReady", true);
+  $bus.emit("workflowLinkComputed");
   showProfileDialog.value = true;
 
   visible.value = false;
