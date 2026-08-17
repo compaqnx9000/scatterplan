@@ -53,7 +53,7 @@
                 </span>
                 <div>
                   <div class="insight-stat__label">发射点高程</div>
-                  <div class="insight-stat__value">{{ fmt(insights.tx_height) }} m</div>
+                  <div class="insight-stat__value">{{ fmt(txHeight) }} m</div>
                 </div>
               </div>
               <div class="insight-stat">
@@ -62,7 +62,7 @@
                 </span>
                 <div>
                   <div class="insight-stat__label">地形最高</div>
-                  <div class="insight-stat__value">{{ fmt(insights.max_height) }} m</div>
+                  <div class="insight-stat__value">{{ fmt(maxHeight) }} m</div>
                 </div>
               </div>
               <div class="insight-stat">
@@ -71,7 +71,7 @@
                 </span>
                 <div>
                   <div class="insight-stat__label">通信距离</div>
-                  <div class="insight-stat__value">{{ fmt(insights.distance, 2) }} km</div>
+                  <div class="insight-stat__value">{{ fmt(pathDistance, 2) }} km</div>
                 </div>
               </div>
               <div class="insight-stat">
@@ -108,7 +108,7 @@
               <div>发射障碍 {{ fmt(txBarrierDistance, 2) }} km · {{ fmt(txBarrierElev) }} m</div>
               <div>散射体 {{ fmt(scattererDistance, 2) }} km · {{ fmt(insights.scatterer_height) }} m</div>
               <div>接收障碍 {{ fmt(rxBarrierFromStart, 2) }} km · {{ fmt(rxBarrierElev) }} m</div>
-              <div>接收点 {{ fmt(insights.distance, 2) }} km · {{ fmt(insights.rx_height) }} m</div>
+              <div>接收点 {{ fmt(pathDistance, 2) }} km · {{ fmt(rxHeight) }} m</div>
             </div>
 
             <div class="insight-section-head">
@@ -395,6 +395,23 @@ const denseSamples = computed(() => {
 
 const hasDenseSamples = computed(() => denseSamples.value.length >= 30);
 
+const sampleStats = computed(() => {
+  const samples = denseSamples.value;
+  if (!samples.length) return { tx: 0, rx: 0, max: 0, dist: 0 };
+  const heights = samples.map((p: any) => toNum(p[1]));
+  return {
+    tx: toNum(samples[0][1]),
+    rx: toNum(samples[samples.length - 1][1]),
+    max: Math.max(...heights),
+    dist: toNum(samples[samples.length - 1][0]),
+  };
+});
+
+const txHeight = computed(() => toNum(props.insights.tx_height) || sampleStats.value.tx);
+const rxHeight = computed(() => toNum(props.insights.rx_height) || sampleStats.value.rx);
+const maxHeight = computed(() => toNum(props.insights.max_height) || sampleStats.value.max);
+const pathDistance = computed(() => toNum(props.insights.distance) || sampleStats.value.dist);
+
 const scattererDistance = computed(() => {
   const given = toNum(props.insights.scatterer_distance);
   if (given > 0.01) return given;
@@ -421,7 +438,7 @@ const rxBarrierElev = computed(() => {
 });
 
 const rxBarrierFromStart = computed(() => {
-  const total = toNum(props.insights.distance);
+  const total = pathDistance.value;
   const fromRx = toNum(props.insights.rx_barrier_distance);
   return Math.max(0, total - fromRx);
 });
@@ -588,11 +605,11 @@ const renderChart = async () => {
 
   const samples = denseSamples.value;
   const path = [
-    [0, toNum(props.insights.tx_height)],
+    [0, txHeight.value],
     [txBarrierDistance.value, txBarrierElev.value],
     [scattererDistance.value, toNum(props.insights.scatterer_height)],
     [rxBarrierFromStart.value, rxBarrierElev.value],
-    [toNum(props.insights.distance), toNum(props.insights.rx_height)],
+    [pathDistance.value, rxHeight.value],
   ].filter((p) => Number.isFinite(p[0]) && Number.isFinite(p[1]));
 
   chart.setOption({
@@ -658,7 +675,7 @@ const renderChart = async () => {
       {
         name: "发射点",
         type: "scatter",
-        data: [[0, toNum(props.insights.tx_height)]],
+        data: [[0, txHeight.value]],
         symbolSize: 8,
         itemStyle: { color: "#5aa8ff" },
         z: 5,
@@ -685,7 +702,7 @@ const renderChart = async () => {
       {
         name: "接收点",
         type: "scatter",
-        data: [[toNum(props.insights.distance), toNum(props.insights.rx_height)]],
+        data: [[pathDistance.value, rxHeight.value]],
         symbolSize: 8,
         itemStyle: { color: "#5a9e6f" },
         z: 5,

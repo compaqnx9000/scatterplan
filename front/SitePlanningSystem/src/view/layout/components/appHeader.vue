@@ -204,6 +204,7 @@ import { computed, getCurrentInstance, onMounted, onUnmounted, ref } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import store from "@/store/index";
 import PlaceSearch from "@/components/placeSearch/index.vue";
+import { homeRouteForCurrentProject, rememberCurrentProjectId } from "@/view/home/service/projectSession";
 
 let currentInstance = getCurrentInstance();
 let $bus = currentInstance?.appContext.config.globalProperties.$bus;
@@ -267,13 +268,13 @@ function closeProfile() {
 function goHome() {
   if (pickLocked.value) return;
   closeProfile();
-  router.push("/");
+  router.push(homeRouteForCurrentProject());
 }
 
 function goSitePlanning() {
   if (pickLocked.value) return;
   closeProfile();
-  router.push("/sitePlanning/sitePlanning");
+  $bus?.emit("openSitePlanningResults");
 }
 
 function subMenuClick(val: any) {
@@ -290,6 +291,7 @@ const handleLogout = () => {
   localStorage.removeItem("refreshToken");
   store.commit("setToken", "");
   store.commit("setRefreshToken", "");
+  rememberCurrentProjectId("");
   router.replace("/");
   $bus.emit("Logout");
 };

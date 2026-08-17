@@ -16,6 +16,7 @@
             <mapToolbar v-show="isLoggedIn" />
         </div>
         <wcMap></wcMap>
+        <SitePlanningResults v-if="isLoggedIn" v-model:visible="showSitePlanningResults" />
         <LoginModal :visible="!isLoggedIn" />
     </div>
 </template>
@@ -27,6 +28,7 @@ import wcMap from "./components/map/index.vue"
 import appHeader from './components/appHeader.vue'
 import mapToolbar from "@/components/mapToolbar/index.vue"
 import LoginModal from "@/view/login/LoginModal.vue"
+import SitePlanningResults from "@/view/sitePlanning/index.vue"
 import store from "@/store/index";
 
 import { useRoute } from 'vue-router';
@@ -34,6 +36,7 @@ let currentInstance = getCurrentInstance()
 let $bus = currentInstance?.appContext.config.globalProperties.$bus
 let isCached: Array<string> = []//缓存组件列表
 let showChat = ref(false);
+const showSitePlanningResults = ref(false);
 const mapPickLocked = ref(false);
 
 let scaleStyle = ref();
@@ -63,8 +66,14 @@ const onMapPickMode = (active: boolean) => {
 };
 $bus.on("mapPickMode", onMapPickMode);
 
+const onOpenSitePlanningResults = () => {
+  showSitePlanningResults.value = true;
+};
+$bus.on("openSitePlanningResults", onOpenSitePlanningResults);
+
 onBeforeUnmount(() => {
   $bus.off("mapPickMode", onMapPickMode);
+  $bus.off("openSitePlanningResults", onOpenSitePlanningResults);
 });
 /**
  * 一般情况下下面的布局方式都是单独使用的

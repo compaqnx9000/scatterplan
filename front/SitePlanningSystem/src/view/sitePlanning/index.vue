@@ -1,6 +1,6 @@
 <template>
   <transition name="station-fade">
-    <div ref="panelRef" class="results-panel" :style="panelStyle">
+    <div v-if="visible" ref="panelRef" class="results-panel" :style="panelStyle">
       <div class="results-panel__panel">
         <div class="results-panel__header" @mousedown="startDrag">
           <div class="results-panel__title">站点规划结果</div>
@@ -59,28 +59,28 @@
             :row-style="{ height: '40px' }"
             :row-class-name="tableRowClassName"
           >
-            <el-table-column type="selection" width="40" align="center" />
-            <el-table-column label="序号" type="index" width="70" align="center" />
-            <el-table-column prop="name" label="工程名称" align="center" min-width="140" show-overflow-tooltip />
-            <el-table-column prop="username" label="用户名称" align="center" min-width="90" show-overflow-tooltip />
-            <el-table-column prop="single_link_count" label="单链路" align="center" min-width="90">
+            <el-table-column type="selection" width="40" align="center" header-align="center" />
+            <el-table-column label="序号" type="index" width="70" align="center" header-align="center" />
+            <el-table-column prop="name" label="工程名称" align="center" header-align="center" min-width="140" show-overflow-tooltip />
+            <el-table-column prop="username" label="用户名称" align="center" header-align="center" min-width="90" show-overflow-tooltip />
+            <el-table-column prop="single_link_count" label="单链路" align="center" header-align="center" min-width="90">
               <template #default="scope">
                 {{ scope.row.single_link_count ? `${scope.row.single_link_count}条` : "无" }}
               </template>
             </el-table-column>
-            <el-table-column prop="has_coverage" label="区域覆盖" align="center" min-width="90">
+            <el-table-column prop="has_coverage" label="区域覆盖" align="center" header-align="center" min-width="90">
               <template #default="scope">
                 {{ scope.row.has_coverage ? "有" : "无" }}
               </template>
             </el-table-column>
-            <el-table-column prop="station_count" label="推荐站点" align="center" min-width="90">
+            <el-table-column prop="station_count" label="推荐站点" align="center" header-align="center" min-width="90">
               <template #default="scope">
                 {{ scope.row.station_count || 0 }}
               </template>
             </el-table-column>
-            <el-table-column prop="updated_at" label="更新时间" align="center" min-width="168" />
+            <el-table-column prop="updated_at" label="更新时间" align="center" header-align="center" min-width="168" />
 
-            <el-table-column label="操作" align="center" width="150" fixed="right">
+            <el-table-column label="操作" align="center" header-align="center" width="150" fixed="right">
               <template #default="scope">
                 <div class="results-panel__row-actions">
                   <button class="results-panel__link" type="button" @click="handleView(scope.row)">查看详情</button>
@@ -116,12 +116,15 @@
 <script lang="ts" setup>
 //@ts-nocheck
 
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, getCurrentInstance, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { listProjects, deleteProject } from "@/request/sitePlanting";
-import { useRouter } from "vue-router";
 
-const router = useRouter();
+const props = defineProps({
+  visible: { type: Boolean, default: false },
+});
+const emit = defineEmits(["update:visible"]);
+const $bus = getCurrentInstance()?.appContext.config.globalProperties.$bus;
 const queryField = ref<"name" | "user">("name");
 const keyword = ref("");
 
@@ -152,7 +155,7 @@ const getDefaultPanelPos = (size?: { width: number; height: number }) => {
   const height = size?.height ?? 620;
   return {
     x: Math.max(24, Math.round((window.innerWidth - width) / 2)),
-    y: Math.max(72, Math.round((window.innerHeight - height) / 2)),
+    y: Math.max(24, Math.round((window.innerHeight - height) / 2)),
   };
 };
 
@@ -194,11 +197,11 @@ const stopDrag = () => {
 };
 
 const handleClose = () => {
-  router.push("/");
+  emit("update:visible", false);
 };
 
 const onEsc = (e: KeyboardEvent) => {
-  if (e.key === "Escape") handleClose();
+  if (e.key === "Escape" && props.visible) handleClose();
 };
 
 const isoToNormalTime = (isoTime) => {
@@ -242,6 +245,8 @@ const getList = async () => {
     tableData.value = [];
   } finally {
     loading.value = false;
+    await nextTick();
+    centerPanel();
   }
 };
 
@@ -255,12 +260,8 @@ const handleSelectionChange = (selection: any[]) => {
 };
 
 const handleView = (row: any) => {
-  router.push({
-    path: "/",
-    query: {
-      project: row.id,
-    },
-  });
+  handleClose();
+  $bus?.emit("openProjectById", row.id);
 };
 
 const handleDelete = (row?: any) => {
@@ -290,9 +291,17 @@ const tableRowClassName = ({ rowIndex }: { rowIndex: number }) => {
   return "odd-row";
 };
 
+watch(
+  () => props.visible,
+  async (val) => {
+    if (!val) return;
+    getList();
+    await nextTick();
+    centerPanel();
+  }
+);
+
 onMounted(() => {
-  getList();
-  centerPanel();
   updateTableMaxHeight();
   window.addEventListener("resize", updateTableMaxHeight);
   window.addEventListener("keydown", onEsc);
@@ -307,4 +316,13 @@ onBeforeUnmount(() => {
 
 <style lang="scss" scoped>
 @import "@/styles/gotham-panel.scss";
+
+.results-panel {
+  :deep(.el-table th.el-table__cell),
+  :deep(.el-table td.el-table__cell),
+  :deep(.el-table .cell) {
+    text-align: center !important;
+    justify-content: center;
+  }
+}
 </style>

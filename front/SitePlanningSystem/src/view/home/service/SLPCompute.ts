@@ -1,4 +1,3 @@
-import { position } from "html2canvas/dist/types/css/property-descriptors/position";
 import * as mars3d from "mars3d";
 import { MAP_LABEL_FONT } from "./mapLabelStyle";
 
@@ -207,57 +206,51 @@ export default class SLPComputeService {
    * @param message 链路数据
    */
   setLink(message: any): void {
-    console.log("setLink", message);
-    // console.log("message", message);
-    // 3. 创建两点连线
-    // 2. 定义两个点的坐标（经纬度高程）
-    const point1 = {
-      lng: message.startPoint[0],
-      lat: message.startPoint[1],
-      alt: message.startPoint[2],
-    }; // 点1：经度、纬度、高程
-    const point2 = {
-      lng: message.endPoint[0],
-      lat: message.endPoint[1],
-      alt: message.endPoint[2],
-    }; // 点2
-    // 清除所有linkageCalculation
-    // 先获取所有图形的副本
-    const graphics = [...this.graphicLayer.getGraphics()];
+    const toPos = (lng: unknown, lat: unknown, alt: unknown): [number, number, number] | null => {
+      const x = Number(lng);
+      const y = Number(lat);
+      const z = Number(alt);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+      return [x, y, Number.isFinite(z) ? z : 0];
+    };
 
-    // 切换菜单，清除所有图形
-    // 遍历副本进行删除
+    const start = Array.isArray(message.startPoint)
+      ? toPos(message.startPoint[0], message.startPoint[1], message.startPoint[2])
+      : toPos(message.tx_lon, message.tx_lat, message.tx_height);
+    const end = Array.isArray(message.endPoint)
+      ? toPos(message.endPoint[0], message.endPoint[1], message.endPoint[2])
+      : toPos(message.rx_lon, message.rx_lat, message.rx_height);
+    const scatterer = toPos(message.scatterer_lon, message.scatterer_lat, message.scatterer_height);
+    if (!start || !end || !scatterer) return;
+
+    const graphics = [...this.graphicLayer.getGraphics()];
     graphics.forEach((graphicItem) => {
       if (graphicItem && graphicItem.name === "linkageCalculation") {
         this.graphicLayer.removeGraphic(graphicItem);
       }
     });
 
-    const graphic = new mars3d.graphic.PolylineEntity({
+    const txRxLine = new mars3d.graphic.PolylineEntity({
       name: "linkageCalculation",
-      positions: [point1, point2],
+      positions: [start, end],
       style: {
         width: 2,
+        clampToGround: false,
         materialType: mars3d.MaterialType.PolylineDash,
         materialOptions: {
-          color: "#FFA21A", // 中心线颜色
+          color: "#FFA21A",
         },
       },
-      attr: { remark: "示例18" },
+      attr: { remark: "收发连线" },
     });
 
-    const point3 = [
-      message.scatterer_lon,
-      message.scatterer_lat,
-      message.scatterer_height,
-    ];
-    // 添加空中的矢量点
-    const graphicPoint = new mars3d.graphic.PointEntity({
+    const scattererPoint = new mars3d.graphic.PointEntity({
       name: "linkageCalculation",
-      position: point3,
+      position: scatterer,
       style: {
         pixelSize: 10,
-        color: "#FF391A", // 中心线颜色
+        color: "#FF391A",
+        clampToGround: false,
         label: {
           text: "散射体",
           ...MAP_LABEL_FONT,
@@ -267,39 +260,41 @@ export default class SLPComputeService {
           pixelOffsetY: -10,
         },
       },
-
       attr: { remark: "散射体" },
     });
-    // // 设置PolylineEntity是
-    const graphicline1 = new mars3d.graphic.PolylineEntity({
+
+    const txScattererLine = new mars3d.graphic.PolylineEntity({
       name: "linkageCalculation",
-      positions: [point1, point3],
+      positions: [start, scatterer],
       style: {
         width: 2,
-        materialType: mars3d.MaterialType.Polyline,
+        clampToGround: false,
+        materialType: mars3d.MaterialType.Color,
         materialOptions: {
-          color: "#FF391A", // 中心线颜色
+          color: "#FF391A",
         },
       },
-      attr: { remark: "示例18" },
+      attr: { remark: "发射点-散射体" },
     });
-    const graphicline2 = new mars3d.graphic.PolylineEntity({
+
+    const scattererRxLine = new mars3d.graphic.PolylineEntity({
       name: "linkageCalculation",
-      positions: [point2, point3],
+      positions: [end, scatterer],
       style: {
         width: 2,
-        materialType: mars3d.MaterialType.Polyline,
+        clampToGround: false,
+        materialType: mars3d.MaterialType.Color,
         materialOptions: {
-          color: "#FF391A", // 中心线颜色
+          color: "#FF391A",
         },
       },
-      attr: { remark: "示例18" },
+      attr: { remark: "散射体-接收点" },
     });
-    this.graphicLayer.addGraphic(graphicline1);
-    this.graphicLayer.addGraphic(graphicline2);
-    this.graphicLayer.addGraphic(graphicPoint);
-    this.graphicLayer.addGraphic(graphic);
-    // showProfileDialog.value = true;
+
+    this.graphicLayer.addGraphic(txScattererLine);
+    this.graphicLayer.addGraphic(scattererRxLine);
+    this.graphicLayer.addGraphic(scattererPoint);
+    this.graphicLayer.addGraphic(txRxLine);
   }
 
   /**

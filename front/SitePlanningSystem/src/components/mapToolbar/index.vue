@@ -58,6 +58,12 @@
         </button>
 
         <TransitionGroup name="rail-unlock" tag="div" class="map-toolbar__analysis">
+          <div
+            v-if="showCoreTools"
+            key="workflow-divider"
+            class="map-toolbar__rail-divider"
+            aria-hidden="true"
+          ></div>
           <button
             v-if="showCoreTools"
             key="station"
@@ -1544,8 +1550,8 @@ onUnmounted(() => {
 
   &__footer {
     width: 100%;
-    margin-top: 108px;
-    padding-top: 16px;
+    margin-top: 40px;
+    padding-top: 12px;
     display: flex;
     flex-direction: column;
     align-items: stretch;

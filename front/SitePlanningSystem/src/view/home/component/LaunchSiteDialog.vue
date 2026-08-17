@@ -141,12 +141,27 @@
                 <h3>Radio Parameters</h3>
               </div>
 
-              <el-form-item label="信号频率" prop="freq">
-                <el-input v-model="drawLaunchSiteForm.freq" placeholder="请输入">
-                  <template #suffix>
-                    <span class="station-config__unit">MHz</span>
-                  </template>
-                </el-input>
+              <el-form-item class="station-config__freq-item" prop="freq">
+                <div class="station-config__freq">
+                  <div class="station-config__freq-head">
+                    <span class="station-config__freq-label">
+                      信号频率<span class="station-config__req">*</span>
+                    </span>
+                    <span class="station-config__freq-value">{{ freqGhzLabel }} GHz</span>
+                  </div>
+                  <el-slider
+                    :model-value="freqSliderValue"
+                    :min="FREQ_MIN_MHZ"
+                    :max="FREQ_MAX_MHZ"
+                    :step="FREQ_STEP_MHZ"
+                    :show-tooltip="false"
+                    @update:model-value="onFreqSlider"
+                  />
+                  <div class="station-config__freq-ends">
+                    <span>4.4</span>
+                    <span>5.0</span>
+                  </div>
+                </div>
               </el-form-item>
 
               <el-form-item label="发射功率" prop="trans_power">
@@ -268,11 +283,15 @@ const climateOptions = [
   { label: "海洋性温带陆地气候区", value: "6" },
 ];
 
+const FREQ_MIN_MHZ = 4400;
+const FREQ_MAX_MHZ = 5000;
+const FREQ_STEP_MHZ = 10;
+
 const rules = ref({
   diversity_order: [{ required: true, message: "请输入调整系数", trigger: "change" }],
   tx_gain: [{ required: true, message: "请输入发射天线增益", trigger: "change" }],
   rx_gain: [{ required: true, message: "请输入接收天线增益", trigger: "change" }],
-  freq: [{ required: true, message: "请输入信号频率", trigger: "change" }],
+  freq: [{ required: true, message: "请选择信号频率", trigger: "change" }],
   trans_power: [{ required: true, message: "请输入发射功率", trigger: "change" }],
   point_name: [{ required: true, message: "请输入站点名称", trigger: "change" }],
   comm_rate: [{ required: true, message: "请选择通信速率", trigger: "change" }],
@@ -305,6 +324,22 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["update:visible", "update:drawLaunchSiteForm", "update:isSelectStartPointOver"]);
+
+const parseFreqMhz = () => {
+  const n = Number(props.drawLaunchSiteForm.freq);
+  return Number.isFinite(n) ? n : 4700;
+};
+
+const freqSliderValue = computed(() => {
+  const n = parseFreqMhz();
+  return Math.min(FREQ_MAX_MHZ, Math.max(FREQ_MIN_MHZ, n));
+});
+
+const freqGhzLabel = computed(() => (parseFreqMhz() / 1000).toFixed(1));
+
+const onFreqSlider = (val: number) => {
+  props.drawLaunchSiteForm.freq = String(val);
+};
 
 const launchSiteForm = ref(null);
 
@@ -976,6 +1011,90 @@ onBeforeUnmount(() => {
         box-shadow: 0 0 30px rgba(157, 223, 46, 0.6);
       }
     }
+  }
+
+  &__freq-item {
+    :deep(.el-form-item__label) {
+      display: none !important;
+      height: 0 !important;
+      margin: 0 !important;
+    }
+  }
+
+  &__freq {
+    width: 100%;
+    padding: 2px 2px 0;
+  }
+
+  &__freq-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  &__freq-label {
+    font-family: Inter, sans-serif;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 14px;
+    white-space: nowrap;
+  }
+
+  &__req {
+    margin-left: 2px;
+    color: #ffb4ab;
+  }
+
+  &__freq-value {
+    color: #9ddf2e;
+    font-family: Inter, "IBM Plex Mono", sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 16px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+
+  &__freq-ends {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 2px;
+    color: #c0c8c3;
+    font-family: Inter, sans-serif;
+    font-size: 11px;
+    line-height: 14px;
+  }
+
+  :deep(.station-config__freq .el-slider) {
+    --el-slider-main-bg-color: transparent;
+    --el-slider-runway-bg-color: rgba(180, 200, 220, 0.18);
+    --el-slider-button-size: 14px;
+    --el-slider-height: 4px;
+    --el-slider-button-wrapper-size: 28px;
+    --el-slider-button-wrapper-offset: -12px;
+    height: 28px;
+  }
+
+  :deep(.station-config__freq .el-slider__runway) {
+    background: rgba(180, 200, 220, 0.18);
+  }
+
+  :deep(.station-config__freq .el-slider__bar) {
+    background: transparent;
+  }
+
+  :deep(.station-config__freq .el-slider__button) {
+    border: none;
+    background: #9ddf2e;
+    box-shadow: 0 0 10px rgba(157, 223, 46, 0.45);
+  }
+
+  :deep(.station-config__freq .el-slider__button-wrapper) {
+    top: -12px;
   }
 
   :deep(.el-form-item) {

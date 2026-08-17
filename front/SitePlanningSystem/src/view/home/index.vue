@@ -461,6 +461,7 @@ import ScreenshotTool from "@/components/ScreenshotTool/index.vue";
 import { useRoute, useRouter } from 'vue-router';
 import { formatDecimal6 } from "@/view/systemData/useGothamPanel";
 import { parseLongitude, parseLatitude, formatLongitude, formatLatitude } from "@/view/home/service/rules";
+import { rememberCurrentProjectId } from "@/view/home/service/projectSession";
 
 
 
@@ -631,6 +632,19 @@ const hasLinkResult = () =>
   hasFilled(linkageCalculationForm.distance) ||
   hasFilled(ProfileForm.image_url) ||
   hasFilled(linkageCalculationForm.image_url);
+
+const lastLinkPointKey = ref("");
+const currentLinkPointKey = () => {
+  const round = (n: number) => (Number.isFinite(n) ? n.toFixed(5) : "");
+  return [
+    round(parseLongitude(drawLaunchSiteForm.lng)),
+    round(parseLatitude(drawLaunchSiteForm.lat)),
+    round(parseLongitude(SLPComputeForm.lng)),
+    round(parseLatitude(SLPComputeForm.lat)),
+  ].join(",");
+};
+const linkPointsMoved = () =>
+  !lastLinkPointKey.value || lastLinkPointKey.value !== currentLinkPointKey();
 const showComputedLoading = ref(false);
 const progressStopped = ref(false);
 let profileWatchdogTimer: ReturnType<typeof setTimeout> | null = null;
@@ -886,7 +900,8 @@ const onOpenSLPComputedDialog = () => {
 };
 const onOpenProfileExtract = () => {
   $bus.emit("workflowActive", "profile");
-  if (hasLinkResult()) {
+  if (hasLinkResult() && !linkPointsMoved()) {
+    emitLinkOnGlobe();
     showProfileDialog.value = true;
     return;
   }
@@ -1106,6 +1121,7 @@ const resetAppToInitial = () => {
     centerPointLat: "",
     radius: "",
   });
+  lastLinkPointKey.value = "";
   Object.assign(ProfileForm, {
     image_url: "",
     samples: [],
@@ -1183,6 +1199,7 @@ watch(
   () => currentProjectId.value,
   (id) => {
     $bus.emit("workflowProjectId", id || "");
+    rememberCurrentProjectId(id);
   },
   { immediate: true }
 );
@@ -1588,6 +1605,42 @@ watch(() => activeBtnIndex.value, (newVal, oldVal) => {
   }
 });
 
+const emitLinkOnGlobe = (extra: Record<string, any> = {}) => {
+  const startLng = parseLongitude(drawLaunchSiteForm.lng);
+  const startLat = parseLatitude(drawLaunchSiteForm.lat);
+  const endLng = parseLongitude(extra.rx_lon ?? SLPComputeForm.lng);
+  const endLat = parseLatitude(extra.rx_lat ?? SLPComputeForm.lat);
+  const scattererLon = Number(extra.scatterer_lon ?? ProfileForm.scatterer_lon);
+  const scattererLat = Number(extra.scatterer_lat ?? ProfileForm.scatterer_lat);
+  const scattererHeight = Number(extra.scatterer_height ?? ProfileForm.scatterer_height);
+  if (
+    !Number.isFinite(startLng) ||
+    !Number.isFinite(startLat) ||
+    !Number.isFinite(endLng) ||
+    !Number.isFinite(endLat) ||
+    !Number.isFinite(scattererLon) ||
+    !Number.isFinite(scattererLat)
+  ) {
+    return;
+  }
+  $bus.emit("setSingleLink", {
+    startPoint: [
+      startLng,
+      startLat,
+      Number(extra.tx_height ?? drawLaunchSiteForm.height) || 0,
+    ],
+    endPoint: [
+      endLng,
+      endLat,
+      Number(extra.rx_height ?? SLPComputeForm.height) || 0,
+    ],
+    scatterer_lon: scattererLon,
+    scatterer_lat: scattererLat,
+    scatterer_height: Number.isFinite(scattererHeight) ? scattererHeight : 0,
+  });
+  $bus.emit("showAllSLPCompute");
+};
+
 // 设置单链分析表单数据
 const setSingleLinkFormData = (message: any) => {
   clearProfileWatchdog();
@@ -1595,13 +1648,7 @@ const setSingleLinkFormData = (message: any) => {
   showProfileProgressBar.value = false;
   profileProgressValue.value = 0;
   SLPCompute_id.value = message.id
-  if (SLPComputeForm.lng && SLPComputeForm.lat) {
-    $bus.emit('setSingleLink', {
-      startPoint: [parseLongitude(drawLaunchSiteForm.lng), parseLatitude(drawLaunchSiteForm.lat), drawLaunchSiteForm.height],
-      endPoint: [parseLongitude(SLPComputeForm.lng), parseLatitude(SLPComputeForm.lat), SLPComputeForm.height],
-      ...message
-    });
-  }
+  emitLinkOnGlobe(message);
 
   linkageCalculationForm.distance = message.distance; //距离
   linkageCalculationForm.median_loss = message.median_loss; //中值损失
@@ -1635,11 +1682,18 @@ const setSingleLinkFormData = (message: any) => {
 
   ProfileForm.image_url = message.image_url + '?t=' + new Date().getTime();
   ProfileForm.samples = Array.isArray(message.profile_samples) ? message.profile_samples : [];
-  ProfileForm.tx_height = Number(message.tx_height) || 0;
-  ProfileForm.rx_height = Number(message.rx_height) || 0;
-  ProfileForm.min_height = Number(message.min_height) || 0;
-  ProfileForm.max_height = Number(message.max_height) || 0;
-  ProfileForm.distance = Number(message.distance) || 0;
+  const sampleElevs = ProfileForm.samples
+    .filter((p: any) => Array.isArray(p) && p.length >= 2)
+    .map((p: any) => Number(p[1]))
+    .filter((n: number) => Number.isFinite(n));
+  const sampleDist = ProfileForm.samples.length
+    ? Number(ProfileForm.samples[ProfileForm.samples.length - 1]?.[0])
+    : 0;
+  ProfileForm.tx_height = Number(message.tx_height) || sampleElevs[0] || 0;
+  ProfileForm.rx_height = Number(message.rx_height) || sampleElevs[sampleElevs.length - 1] || 0;
+  ProfileForm.min_height = Number(message.min_height) || (sampleElevs.length ? Math.min(...sampleElevs) : 0);
+  ProfileForm.max_height = Number(message.max_height) || (sampleElevs.length ? Math.max(...sampleElevs) : 0);
+  ProfileForm.distance = Number(message.distance ?? message.distance_km) || (Number.isFinite(sampleDist) ? sampleDist : 0);
   ProfileForm.scatterer_height = Number(message.scatterer_height) || 0;
   ProfileForm.scatterer_lon = Number(message.scatterer_lon) || 0;
   ProfileForm.scatterer_lat = Number(message.scatterer_lat) || 0;
@@ -1656,6 +1710,7 @@ const setSingleLinkFormData = (message: any) => {
   ProfileForm.residual_value = Number(message.residual_value) || 0;
   ProfileForm.reliability = Number(message.reliability) || 0;
   ProfileForm.recv_power = Number(message.recv_power) || 0;
+  lastLinkPointKey.value = currentLinkPointKey();
   if (!hasProfileReturn()) snapshotProfileReturn();
   $bus.emit("workflowLinkAnalysisReady", true);
   showProfileDialog.value = true;
@@ -2358,8 +2413,25 @@ const initstartEndPoint = (query: any) => {
   SLPComputeForm.height = query.rx_height
   SLPComputeForm.point_name = query.rx_station_name
 
-  // 
+  ProfileForm.scatterer_lon = Number(query.scatterer_lon) || 0
+  ProfileForm.scatterer_lat = Number(query.scatterer_lat) || 0
+  ProfileForm.scatterer_height = Number(query.scatterer_height) || 0
+  ProfileForm.tx_lng = parseLongitude(query.tx_lon) || 0
+  ProfileForm.tx_lat = parseLatitude(query.tx_lat) || 0
+  ProfileForm.tx_height = Number(query.tx_elev) || 0
+  ProfileForm.rx_height = Number(query.rx_elev) || 0
+  ProfileForm.max_height = Number(query.max_height) || 0
+  ProfileForm.distance = Number(query.distance ?? query.distance_km) || 0
+  ProfileForm.tx_barrier_distance = Number(query.tx_barrier_distance) || 0
+  ProfileForm.tx_barrier_height = Number(query.tx_barrier_height) || 0
+  ProfileForm.rx_barrier_distance = Number(query.rx_barrier_distance) || 0
+  ProfileForm.rx_barrier_height = Number(query.rx_barrier_height) || 0
+  ProfileForm.median_loss = Number(query.median_loss) || 0
+  ProfileForm.residual_value = Number(query.residual_value) || 0
+  ProfileForm.reliability = Number(query.reliability) || 0
+  ProfileForm.recv_power = Number(query.recv_power) || 0
   ProfileForm.image_url = query.image_path + '?t=' + new Date().getTime()
+  lastLinkPointKey.value = currentLinkPointKey()
   console.log('ProfileForm.image_url', ProfileForm.image_url);
   linkageCalculationForm.area = query.area
   linkageCalculationForm.diversity_order = query.diversity_order
@@ -2652,7 +2724,9 @@ const mapLinkToQuery = (project, link) => ({
   tx_lon: link.tx_lon,
   tx_lat: link.tx_lat,
   tx_height: link.tx_terrain_height,
+  tx_elev: link.tx_height,
   rx_height: link.rx_terrain_height,
+  rx_elev: link.rx_height,
   rx_lon: link.rx_lon,
   rx_lat: link.rx_lat,
   tx_gain: link.tx_gain,
